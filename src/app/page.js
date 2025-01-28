@@ -1,11 +1,71 @@
-import React from 'react';
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { db } from "./firebase";
+import { collection, getDocs, onSnapshot } from "firebase/firestore";  // Correct imports
+
+function App() {
+  const [schools, setSchools] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const ref = collection(db, "schools");
+
+  // Fetch data once using getDocs
+  async function getSchools() {
+    setLoading(true);
+    const querySnapshot = await getDocs(ref);
+    const items = [];
+    querySnapshot.forEach((doc) => {
+      items.push(doc.data());
+    });
+    setSchools(items);
+    setLoading(false);
+  }
+
+  // Use onSnapshot for real-time updates
+  useEffect(() => {
+    const unsubscribe = onSnapshot(ref, (querySnapshot) => {
+      const items = [];
+      querySnapshot.forEach((doc) => {
+        items.push(doc.data());
+      });
+      setSchools(items);
+      setLoading(false);
+    });
+
+    return () => unsubscribe(); // Clean up the subscription on unmount
+  }, []);
+
+  if (loading) {
+    return <h1>Loading...</h1>;
+  }
+
+  return (
+    <div>
+      <h1>Schools</h1>
+      {schools.map((school, index) => (
+        <div key={index}>
+          <h2>{school.title}</h2>
+          <p>{school.desc}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default App;
 
 
+
+
+
+
+/*
 const HomePage = () => {
   return (
     <div className="min-h-screen bg-gray-100">
      
-      {/* HEADER */}
+      
       <header className="bg-green-800 text-white py-6 shadow-md">
         <div className="container mx-auto px-4 flex justify-between items-center">
           <h1 className="text-3xl font-bold">Athlete Performance Progression System</h1>
@@ -19,7 +79,7 @@ const HomePage = () => {
         </div>
       </header>
 
-      {/* STATEMENT */}
+      
       <section className="bg-green-50 py-20 text-center">
         <div className="container mx-auto px-4">
           <h2 className="text-4xl font-bold text-green-800 mb-4">Track. Analyze. Improve.</h2>
@@ -35,7 +95,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* FEATURES */}
+      
       <section id="features" className="py-16">
         <div className="container mx-auto px-4 text-center">
           <h3 className="text-3xl font-bold text-green-800 mb-6">Key Features</h3>
@@ -56,7 +116,6 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* PLAYER PROFILES */}
       <section id="profiles" className="bg-green-50 py-16">
         <div className="container mx-auto px-4 text-center">
           <h3 className="text-3xl font-bold text-green-800 mb-6">Player Profiles</h3>
@@ -72,7 +131,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* CONTACT */}
+     
       <section id="contact" className="py-16">
         <div className="container mx-auto px-4 text-center">
           <h3 className="text-3xl font-bold text-green-800 mb-6">Get in Touch</h3>
@@ -88,7 +147,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* FOOTER */}
+      
       <footer className="bg-green-800 text-white py-4">
         <div className="container mx-auto px-4 text-center">
           <p>&copy; 2025 APPS. All rights reserved.</p>
@@ -99,30 +158,7 @@ const HomePage = () => {
 };
 
 export default HomePage;
-
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-
-
-
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDydQ71zXeW1MsuvmZEc97IvYv7dZ7iTRA",
-  authDomain: "robyngrant-642bd.firebaseapp.com",
-  projectId: "robyngrant-642bd",
-  storageBucket: "robyngrant-642bd.firebasestorage.app",
-  messagingSenderId: "629235295614",
-  appId: "1:629235295614:web:9b2d1319419778cb39ff2f",
-  measurementId: "G-ZYCBV9MZKD"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-
+*/
 
 
 
