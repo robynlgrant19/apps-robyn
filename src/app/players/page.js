@@ -15,6 +15,9 @@ function Player() {
       querySnapshot.forEach((doc) => {
         items.push(doc.data());
       });
+
+      items.sort((a, b) => a.number - b.number);
+      
       setPlayers(items);
     });
 
