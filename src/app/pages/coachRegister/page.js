@@ -1,9 +1,10 @@
-
 "use client";
 
 import React from "react";
-import SignUp from "../components/auth/sign_up";
+import SignUp from "../../components/auth/sign_up";
 import Link from "next/link";
+import AuthDetails from "../../components/auth/authDetails";
+
 
 export default function Register() {
   return (
@@ -16,6 +17,9 @@ export default function Register() {
         <span className="text-blue-500 hover:underline cursor-pointer">Sign In</span>
       </Link>
     </p>
+     <AuthDetails />
+
+
   </div>
   );
 }

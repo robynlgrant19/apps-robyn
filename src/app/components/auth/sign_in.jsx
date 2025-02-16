@@ -1,12 +1,14 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { auth } from "../../firebase";
 import { signInWithEmailAndPassword } from "firebase/auth"
-
 
 const SignIn = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    
 
 
     const signIn = (e) => {
@@ -14,18 +16,19 @@ const SignIn = () => {
         setErrorMessage('');
 
         signInWithEmailAndPassword(auth, email, password)
-        .then(() => {
-            console.log(userCredential);
+        .then((userCredential) => {
+            //console.log(userCredential);
             setEmail('');
             setPassword('');
         }).catch((error) => {
-            
             if (error.code === 'auth/wrong-password') {
                 setErrorMessage('Incorrect password. Please try again.');
             } else if (error.code === 'auth/user-not-found') {
                 setErrorMessage('No account found with this email.');
+            } else if (error.code === 'auth/invalid-email') {
+                setErrorMessage('Invalid email format. Please enter a valid email.');
             } else {
-                setErrorMessage('Something went wrong. Please try again later.');
+                setErrorMessage('Failed to sign in. Please try again.');
             }
         });
         
@@ -56,3 +59,4 @@ const SignIn = () => {
 }
 
 export default SignIn
+
