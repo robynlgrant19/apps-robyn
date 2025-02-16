@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { auth } from "../../firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth"
@@ -22,9 +24,7 @@ const SignUp = () => {
             setErrorMessage('Password not long enough. Must be at least 6 characters.');
         } else if (error.code === 'auth/email-already-in-use') {
             setErrorMessage('This email is already in use. Please try a different one.');
-        } else {
-            setErrorMessage('Something went wrong. Please try again later.');
-        }
+        } 
     });
 
 
