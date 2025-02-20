@@ -12,7 +12,7 @@ export default function Register() {
           <div className="max-w-md mx-auto">
           <h1 className="text-2xl text-gray-400 font-semibold mb-6 text-center">I am a...</h1>
             <div className="flex flex-col space-y-4">
-              {/* Player Button */}
+              
               <Link href="/pages/playerRegister">
                 <div className="bg-white border-2 border-green-500 p-6 rounded-lg shadow-lg hover:shadow-2xl hover:scale-105 transform transition-all">
                   <h2 className="text-2xl font-semibold text-gray-800 mb-2 text-center">Player</h2>
@@ -22,7 +22,7 @@ export default function Register() {
                 </div>
               </Link>
 
-              {/* Coach Button */}
+              
               <Link href="/pages/coachRegister">
                 <div className="bg-white border-2 border-green-500 p-6 rounded-lg shadow-lg hover:shadow-2xl hover:scale-105 transform transition-all">
                   <h2 className="text-2xl font-semibold text-gray-800 mb-2 text-center">Coach</h2>
