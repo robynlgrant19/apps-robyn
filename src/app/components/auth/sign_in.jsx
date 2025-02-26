@@ -38,7 +38,6 @@ const SignIn = () => {
 
         <div>
           <label className="text-gray-800 text-sm block mb-1">Email</label>
-          {errorMessage && <p className="text-red-600 text-sm">{errorMessage}</p>}
           <input
             type="email"
             placeholder="Enter your email"
@@ -59,6 +58,7 @@ const SignIn = () => {
             className="w-full text-sm text-gray-800 border border-gray-300 px-4 py-3 rounded-md outline-blue-600"
             onChange={(e) => setPassword(e.target.value)}
           />
+          {errorMessage && <p className="bg-red-100 border border-red-400 text-red-600 px-4 py-3 rounded-md mt-2 text-sm">{errorMessage}</p>}
         </div>
 
         
