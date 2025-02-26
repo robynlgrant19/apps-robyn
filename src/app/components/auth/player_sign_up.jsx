@@ -24,20 +24,23 @@ export default function PlayerSignUp() {
             lastName: lastName,
             jerseyNumber: jerseyNumber,
             email: email,
+            role:"player",
             uid: user.uid,
             createdAt: new Date(),
             });
         } catch(error) {
             if (error.code === 'auth/email-already-in-use' ) {
                 setErrorMessage("This email is already in use");
-            } 
+            }  else if (error.code === 'auth/invalid-email') {
+              setErrorMessage('Invalid email format. Please enter a valid email.');
+            } else {
+              setErrorMessage('Failed to sign in. Please try again.');
+            }
         } 
     };
 
     return (
         <div className="max-w-md mx-auto bg-white p-8  rounded-lg">
-          
-          {errorMessage && <p className="text-red-500 text-md">{errorMessage}</p>}
     
           <form onSubmit={PlayerSignUp} className="space-y-4">
             <div>
@@ -98,6 +101,7 @@ export default function PlayerSignUp() {
                 required
                 className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-green-500"
               />
+              {errorMessage && <p className="bg-red-100 border border-red-400 text-red-600 px-4 py-3 rounded-md mt-2 text-sm">{errorMessage}</p>}
             </div>
     
             <button type="submit" className="w-full py-2 text-white bg-green-600 rounded-md hover:bg-green-700">

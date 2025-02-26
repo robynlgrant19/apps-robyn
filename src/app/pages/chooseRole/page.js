@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 
-export default function Register() {
+export default function Role() {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center py-6 sm:py-12">
       <div className="relative py-3 sm:max-w-xl sm:mx-auto w-full">
