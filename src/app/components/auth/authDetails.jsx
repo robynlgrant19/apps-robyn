@@ -39,7 +39,6 @@ const AuthDetails = () => {
 
     const userSignOut = () => {
         signOut(auth).then(() => {
-            console.log('Sign out successful');
             router.replace("/");
         } 
         ).catch(error => console.log(error))

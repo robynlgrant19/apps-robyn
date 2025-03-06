@@ -2,36 +2,59 @@
 
 import React, { useEffect, useState } from "react";
 import { auth, db } from "../../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import AuthDetails from "../../components/auth/authDetails";
 import Modal from "../../components/modal";
-import Dropbox from "../../components/dropzone";
+import CreateTeam from "../../components/create_team";
+import Link from "next/link"; 
+import { onAuthStateChanged } from "firebase/auth";
 
-export default function Register() {
-  const [playerData, setPlayerData] = useState(null);
+export default function CoachHome() {
+  const [coachData, setCoachData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+  const [teams, setTeams] = useState([]);
+  const [user, setUser] = useState(null);
+
+  // Fetch coach data
+  const fetchCoachData = async (user) => {
+    if (!user) return;
+    
+    const coachRef = doc(db, "coaches", user.uid);
+    const coachSnap = await getDoc(coachRef);
+
+    if (coachSnap.exists()) {
+      setCoachData(coachSnap.data());
+    }
+
+    // Fetch teams
+    const teamsRef = collection(db, "teams");
+    const q = query(teamsRef, where("coachId", "==", user.uid));
+    const querySnapshot = await getDocs(q);
+
+    const teamsData = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    setTeams(teamsData);
+  };
 
   useEffect(() => {
-    const fetchPlayerData = async () => {
-      const user = auth.currentUser;
-      if (user) {
-        const playerRef = doc(db, "players", user.uid);
-        const playerSnap = await getDoc(playerRef);
-
-        if (playerSnap.exists()) {
-          setPlayerData(playerSnap.data());
-        }
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        await fetchCoachData(currentUser);
+      } else {
+        setUser(null);
+        setCoachData(null);
+        setTeams([]);
       }
       setLoading(false);
-    };
+    });
 
-    fetchPlayerData();
+    return () => unsubscribe();
   }, []);
-    
-  
-
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -44,49 +67,62 @@ export default function Register() {
       {/* Main Content */}
       <div className="flex flex-col items-center justify-center mt-10">
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-          <h1 className="text-2xl font-semibold text-gray-700 mb-4">Hello</h1>
-          
           {loading ? (
-            <p className="text-gray-500">Loading player data...</p>
-          ) : playerData ? (
+            <p className="text-gray-500">Loading coach data...</p>
+          ) : coachData ? (
             <div>
-              <p className="text-gray-700"> <strong> {playerData.firstName} {playerData.lastName} #{playerData.jerseyNumber}</strong></p>
+              {coachData.approved ? (
+                <h1 className="text-2xl font-semibold text-gray-700">
+                  <strong>Hello {coachData.firstName} {coachData.lastName}</strong>
+                </h1>
+              ) : (
+                <p className="text-red-500">Your account is awaiting approval from an admin.</p>
+              )}
             </div>
           ) : (
-            <p className="text-gray-500">No player data found.</p>
+            <p className="text-gray-500">No coach data found.</p>
           )}
         </div>
 
-        {/* Dashboard */}
+        {/* Teams Dashboard */}
         <div className="mt-6 w-full max-w-md">
           <h2 className="text-lg font-semibold text-gray-700 mb-3">Teams</h2>
-          <button 
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition" 
-            onClick={() => setIsModalOpen(true)}
-          >
-            Create Team
-          </button>
+
+          {teams.length > 0 ? (
+            <ul className="space-y-4">
+              {teams.map((team) => (
+                <li key={team.id} className="bg-white p-4 rounded-md shadow-md">
+                  <Link href={`/teamPage/${team.id}`} className="text-xl font-semibold text-gray-800 hover:underline">
+                    {team.sport} - {team.school}
+                  </Link>
+                  <p className="text-gray-500">Gender: {team.gender}</p>
+                  <p className="text-gray-500">Team Code: {team.teamCode}</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500">No teams created yet.</p>
+          )}
+
+          {coachData?.approved ? (
+            <button
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition mt-6"
+              onClick={() => setIsModalOpen(true)}
+            >
+              Create Team
+            </button>
+          ) : (
+            <p className="text-gray-500">You cannot create a team until your account is approved.</p>
+          )}
 
           {/* Modal Component */}
           <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-            <h2 className="text-xl font-bold">Pop-up Content</h2>
-            <p>This is the content of the pop-up.</p>
-            <form> 
-                <div>
-                <label> Hello </label>
-                <input 
-                placeholder="Enter your first name"
-                />
-                </div>
-                </form>
-
-
+            <CreateTeam onClose={() => setIsModalOpen(false)} />
           </Modal>
-
-          <Dropbox />
-          
         </div>
       </div>
     </div>
   );
 }
+
+
