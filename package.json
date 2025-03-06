@@ -14,7 +14,8 @@
     "framer-motion": "^12.4.3",
     "next": "15.1.6",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.2.0"
   },
   "devDependencies": {
     "postcss": "^8",
