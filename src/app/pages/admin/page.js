@@ -12,7 +12,7 @@ export default function Admin() {
   useEffect(() => {
     const fetchCoaches = async () => {
       const coachesRef = collection(db, "coaches");
-      const q = query(coachesRef, where("approved", "==", false));  // Fetch only unapproved coaches
+      const q = query(coachesRef, where("approved", "==", false));  // all unapproved coaches
       const querySnapshot = await getDocs(q);
 
       const coachesList = [];
@@ -29,27 +29,25 @@ export default function Admin() {
 
   const approveCoach = async (coachId) => {
     const coachRef = doc(db, "coaches", coachId);
-    await updateDoc(coachRef, { approved: true });  
-    // Set the coach's approval status to true
-    // Reload the coach list
+    await updateDoc(coachRef, { approved: true });  //approve coach
     setCoaches((prevCoaches) => prevCoaches.filter((coach) => coach.id !== coachId));
   };
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Navbar */}
-      <nav className="bg-green-600 p-4 flex justify-between items-center shadow-md">
-        <h1 className="text-white text-xl font-bold">RG Performance</h1>
-        <AuthDetails />
-      </nav>
+      
+      <nav className="bg-gradient-to-r from-emerald-900 via-emerald-600 to-emerald-500 p-4 flex justify-between items-center shadow-md">
+      <h1 className="text-white text-xl font-bold">RG Performance</h1>
+      <AuthDetails />
+    </nav>
 
-      {/* Main Content */}
+      
       <div className="flex flex-col items-center justify-center mt-10">
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
           <h1 className="text-2xl font-semibold text-gray-700 mb-4">Admin Page</h1>
         </div>
 
-        {/* Dashboard */}
+       
         <div className="mt-6 w-full max-w-md">
           <h2 className="text-lg font-semibold text-gray-700 mb-3">Unapproved Coaches</h2>
 
@@ -64,7 +62,7 @@ export default function Admin() {
                   </h3>
                   <p className="text-gray-500">Email: {coach.email}</p>
                   <button
-                    className="mt-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+                    className="mt-2 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition"
                     onClick={() => approveCoach(coach.id)}
                   >
                     Approve Coach

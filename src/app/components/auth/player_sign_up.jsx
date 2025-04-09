@@ -19,6 +19,7 @@ export default function PlayerSignUp() {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
+            //player database
             await setDoc(doc(db, "players", user.uid), {
             firstName: firstName,
             lastName: lastName,
@@ -51,7 +52,7 @@ export default function PlayerSignUp() {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
-                className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-green-500"
+                className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-emerald-500"
               />
             </div>
 
@@ -63,11 +64,11 @@ export default function PlayerSignUp() {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required
-                className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-green-500"
+                className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-emerald-500"
               />
             </div>
 
-            <div>
+            {/*<div>
               <label className="text-gray-700 text-md">Jersey Number</label>
               <input
                 type="number"
@@ -75,9 +76,9 @@ export default function PlayerSignUp() {
                 value={jerseyNumber}
                 onChange={(e) => setJerseyNumber(e.target.value)}
                 required
-                className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-green-500"
+                className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-emerald-500"
               />
-            </div>
+            </div>*/}
     
             <div>
               <label className="text-gray-700 text-md">Email</label>
@@ -87,7 +88,7 @@ export default function PlayerSignUp() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-green-500"
+                className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-emerald-500"
               />
             </div>
     
@@ -99,12 +100,12 @@ export default function PlayerSignUp() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-green-500"
+                className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-emerald-500"
               />
               {errorMessage && <p className="bg-red-100 border border-red-400 text-red-600 px-4 py-3 rounded-md mt-2 text-sm">{errorMessage}</p>}
             </div>
     
-            <button type="submit" className="w-full py-2 text-white bg-green-600 rounded-md hover:bg-green-700">
+            <button type="submit" className="w-full py-2 text-white bg-emerald-600 rounded-md hover:bg-emerald-700">
               Sign Up
             </button>
           </form>
