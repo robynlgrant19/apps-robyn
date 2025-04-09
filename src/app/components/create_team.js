@@ -1,14 +1,17 @@
+"use client";
+
 import React, { useState } from "react";
 import { auth, db } from "../firebase";
 import { collection, addDoc } from "firebase/firestore";
 
-export default function CreateTeam({ onClose }) {
+export default function CreateTeam({ onClose, onTeamCreated }) {
   const [teamGender, setTeamGender] = useState("");
   const [teamSport, setTeamSport] = useState("");
   const [teamSchool, setTeamSchool] = useState("");
   const [teamCode, setTeamCode] = useState("");
   const [error, setError] = useState(null);
 
+  //genertaing a team code 
   const generateCode = () => {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let code = '';
@@ -21,35 +24,44 @@ export default function CreateTeam({ onClose }) {
   const handleCreateTeam = async () => {
     const newCode = generateCode(); 
     setTeamCode(newCode);
-
+  
     try {
       const user = auth.currentUser;
-
+      
+      // Create team in Firestore
       await addDoc(collection(db, "teams"), {
         gender: teamGender,
         sport: teamSport,
         school: teamSchool,
         coachId: user.uid,
         players: [],
-        teamCode: newCode,  // Store the team code in Firestore
+        teamCode: newCode,
       });
-
-      setTeamGender(""); // Reset input field
+  
+      // Clear form
+      setTeamGender(""); 
       setTeamSport("");
       setTeamSchool("");
-      onClose(); // Close modal after successful creation
+  
+      // Call parent callback to refresh teams list
+      if (onTeamCreated) {
+        await onTeamCreated();
+      }
+  
+      onClose(); // Close the modal
     } catch (err) {
       setError(`Failed to create team: ${err.message}`);
       console.error(err);
     }
   };
+  
 
   return (
     <div>
       <select
         value={teamSport}
         onChange={(e) => setTeamSport(e.target.value)}
-        className="w-full p-2 border rounded-md mb-3"
+        className="w-full p-2 border rounded-md mb-3 focus:border-emerald-500 focus:outline-none"
       >
         <option value="" disabled>Select a sport</option>
         <option value="Soccer">Soccer</option>
@@ -72,7 +84,7 @@ export default function CreateTeam({ onClose }) {
       <select
         value={teamGender}
         onChange={(e) => setTeamGender(e.target.value)}
-        className="w-full p-2 border rounded-md mb-3"
+        className="w-full p-2 border rounded-md mb-3 focus:border-emerald-500 focus:outline-none"
       >
         <option value="" disabled>Gender</option>
         <option value="Men">Men</option>
@@ -85,12 +97,12 @@ export default function CreateTeam({ onClose }) {
         placeholder="Enter school"
         value={teamSchool}
         onChange={(e) => setTeamSchool(e.target.value)}
-        className="w-full p-2 border rounded-md mb-3"
+        className="w-full p-2 border rounded-md mb-3 focus:border-emerald-500 focus:outline-none"
       />
 
       <button
         onClick={handleCreateTeam}
-        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+        className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition"
       >
         Save Team
       </button>

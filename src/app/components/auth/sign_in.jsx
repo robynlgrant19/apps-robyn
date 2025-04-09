@@ -43,7 +43,7 @@ const SignIn = () => {
             placeholder="Enter your email"
             value={email}
             required
-            className="w-full text-sm text-gray-800 border border-gray-300 px-4 py-3 rounded-md outline-green-600"
+            className="w-full text-sm text-gray-800 border border-gray-300 px-4 py-3 rounded-md outline-emerald-600"
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
@@ -55,7 +55,7 @@ const SignIn = () => {
             placeholder="Enter your password"
             value={password}
             required
-            className="w-full text-sm text-gray-800 border border-gray-300 px-4 py-3 rounded-md outline-green-600"
+            className="w-full text-sm text-gray-800 border border-gray-300 px-4 py-3 rounded-md outline-emerald-600"
             onChange={(e) => setPassword(e.target.value)}
           />
           {errorMessage && <p className="bg-red-100 border border-red-400 text-red-600 px-4 py-3 rounded-md mt-2 text-sm">{errorMessage}</p>}
@@ -65,7 +65,7 @@ const SignIn = () => {
         <div>
           <button
             type="submit"
-            className="w-full shadow-xl py-2.5 px-4 text-sm font-semibold rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none"
+            className="w-full shadow-xl py-2.5 px-4 text-sm font-semibold rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none"
           >
             Log in
           </button>

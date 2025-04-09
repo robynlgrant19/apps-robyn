@@ -18,7 +18,7 @@ export default function CoachSignUp() {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            
+            // creating the coaches database
             await setDoc(doc(db, "coaches", user.uid), {
                 firstName: firstName,
                 lastName: lastName,
@@ -50,7 +50,7 @@ export default function CoachSignUp() {
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
                         required
-                        className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-green-500"
+                        className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-emerald-500"
                     />
                 </div>
 
@@ -62,7 +62,7 @@ export default function CoachSignUp() {
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                         required
-                        className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-green-500"
+                        className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-emerald-500"
                     />
                 </div>
 
@@ -74,7 +74,7 @@ export default function CoachSignUp() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-green-500"
+                        className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-emerald-500"
                     />
                 </div>
 
@@ -86,12 +86,12 @@ export default function CoachSignUp() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-green-500"
+                        className="w-full text-md border border-gray-300 px-4 py-2 rounded-md outline-emerald-500"
                     />
                     {errorMessage && <p className="bg-red-100 border border-red-400 text-red-600 px-4 py-3 rounded-md mt-2 text-sm">{errorMessage}</p>}
                 </div>
 
-                <button type="submit" className="w-full py-2 text-white bg-green-600 rounded-md hover:bg-green-700">
+                <button type="submit" className="w-full py-2 text-white bg-emerald-600 rounded-md hover:bg-emerald-700">
                     Sign Up
                 </button>
             </form>

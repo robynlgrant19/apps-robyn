@@ -7,10 +7,13 @@ export default {
   ],
   theme: {
     extend: {
-      colors: {
+      fontFamily: {
+        impact: ['Impact', 'sans-serif'],
+        colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
+    },
     },
   },
   plugins: [],

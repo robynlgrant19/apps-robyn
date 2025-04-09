@@ -18,6 +18,7 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  
 }
 
 .error-message {
@@ -29,4 +30,10 @@ body {
   border: 1px solid red;
   border-radius: 4px;
 }
+
+select option:hover {
+  background-color: #10b981; /* Tailwind green-500 */
+  color: white;
+}
+
 
