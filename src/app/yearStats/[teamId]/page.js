@@ -255,7 +255,9 @@ setPlusMinusChartData(filteredForPlusMinus);
       setTeamLeaders({ points: topPoints, goals: topGoals, assists: topAssists });
       setAverageShiftData(avgShiftData);
       setAverageIceTimeData(avgIceTimeData);
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
 
     };
 
@@ -265,7 +267,11 @@ setPlusMinusChartData(filteredForPlusMinus);
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-white text-gray-800">
-        <div className="animate-spin rounded-full border-t-4 border-b-4 border-gray-800 w-14 h-14 mb-6"></div>
+       <img
+          src="/puck.png"
+          alt="Loading..."
+          className="w-16 h-16 mb-6 object-contain animate-spin-slow"
+        />
         <h2 className="text-2xl font-semibold">{loadingMessage}</h2>
       </div>
     );

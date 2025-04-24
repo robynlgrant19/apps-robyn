@@ -34,8 +34,8 @@ export default function PlayerProfile() {
     'Taping sticks...',
     'Warming up the goalie...',
     'Flooding the ice...',
-    'Crunching the numbers...',
-    'Sniping top shelf...'
+    'Sniping top shelf...',
+    'Changing lines...',
   ];
   const [loadingMessage, setLoadingMessage] = useState('');
 
@@ -90,6 +90,8 @@ useEffect(() => {
         let totalPenaltyTime
       
         const gameStats = [];
+
+        
 
         querySnapshot.forEach((doc) => {
           const gameData = doc.data();
@@ -166,7 +168,10 @@ useEffect(() => {
           PenaltyTime: totalPenaltyTime,
         });
         setGamesStats(gameStats);
-        setLoading(false);
+        setTimeout(() => {
+          setLoading(false);
+        }, 1000);
+        
       } catch (error) {
         console.error('Error fetching cumulative stats:', error);
       }
@@ -182,15 +187,18 @@ useEffect(() => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-white text-gray-800">
-        <div className="animate-spin rounded-full border-t-4 border-b-4 border-gray-800 w-14 h-14 mb-6"></div>
+       <img
+          src="/puck.png"
+          alt="Loading..."
+          className="w-16 h-16 mb-6 object-contain animate-spin-slow"
+        />
         <h2 className="text-2xl font-semibold">{loadingMessage}</h2>
       </div>
     );
   }
   
   
-  
-  
+
   if (!player) return <p>Player not found</p>;
 
   //sort games in chrono order
