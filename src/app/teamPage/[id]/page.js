@@ -7,19 +7,38 @@ import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from "fireb
 import Link from "next/link";
 import Dropbox from "../../components/dropzone";
 import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, CategoryScale, LinearScale, BarElement, ArcElement } from 'chart.js';
+import AuthDetails from "../../components/auth/authDetails";
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, CategoryScale, LinearScale, BarElement, ArcElement);
 
 export default function TeamPage() {
   const { id } = useParams();
-  const router = useRouter();
   const [teamData, setTeamData] = useState(null);
   const [players, setPlayers] = useState([]);
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const [message, setMessage] = useState(0);
+  
+  useEffect(() => {
+    const randomIndex = Math.floor(Math.random() * hockeySayings.length);
+    setMessage(hockeySayings[randomIndex]);
+  }, []);
 
+  const hockeySayings = [
+    'Sharpening skates...',
+    'Taping sticks...',
+    'Warming up the goalie...',
+    'Flooding the ice...',
+    'Crunching the numbers...',
+    'Sniping top shelf...'
+  ];
+  
 
-  // Modal state
+  
+  
+
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
@@ -63,303 +82,259 @@ export default function TeamPage() {
 
   
 
-  // Toggle Modal
+  
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
   };
 
-  // Delete Team
+  
   const deleteTeam = async () => {
     try {
-      // Delete associated players (optional, depending on your setup)
+      
       const teamRef = doc(db, "teams", id);
       await deleteDoc(teamRef);
 
-      // Redirect to the home page or any other appropriate page after deletion
+      
       router.push("/pages/homeCoach");
     } catch (error) {
       console.error("Error deleting team: ", error);
     }
   };
 
-  // Toggle Delete Confirmation Modal
+
   const toggleDeleteModal = () => {
     setIsDeleteModalOpen(!isDeleteModalOpen);
   };
 
   
   return (
-
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center">
+      <nav className="bg-gradient-to-r from-emerald-900 to-emerald-500 w-full p-4 shadow-md fixed top-0 left-0 z-50">
+  <div className="container mx-auto flex justify-between items-center">
+  <button
+          onClick={() => router.back()}
+          className="text-white px-4 py-2 text-xl"
+        >
+          ⬅
+        </button>
+    <h1 className="text-white text-2xl font-semibold">RG PERFORMANCE</h1>
     
-    <div className="min-h-screen bg-gray-100 py-10 px-6">
-      {/* Back Button */}
-      <button
-        className="text-emerald-600 text-2xl font-impact rounded-md mb-6 hover:text-emerald-800 transition"
-        onClick={() => router.push(`/pages/homeCoach`)}
-      >
-        ⬅
-      </button>
-
+  </div>
+</nav>
+      
+      <div className="max-w-6xl mx-auto mt-40">
+  
+        
+        
+  
       {loading ? (
-        <p className="text-gray-500 text-lg font-medium">Loading team data...</p>
-      ) : teamData ? (
-        <div className="bg-white p-8 rounded-xl shadow-xl">
-          <h1 className="text-3xl font-impact text-gray-800">{teamData.gender}'s {teamData.sport} - {teamData.school}</h1>
-          <p className="text-xl text-gray-600 mt-4">Team Code: {teamData.teamCode}</p>
+  <div className="flex flex-col items-center justify-center h-screen text-gray-800">
+    <div className="animate-spin rounded-full border-t-4 border-b-4 border-gray-800 w-14 h-14 mb-6"></div>
+    <h2 className="text-2xl font-semibold">{message}</h2>
+  </div>
+) : teamData ? (
 
 
-
-          
-          <section className="mt-8">
-            <h2 className="text-2xl font-impact text-gray-800 mb-4">Players</h2>
-
-            {/* Forwards Section */}
-            <p className="text-lg font-semibold text-gray-700">Forwards</p>
-            {players.filter(player => {
-              let position = "Unknown";
-              games.forEach(game => {
-                if (game.stats && Array.isArray(game.stats)) {
-                  const playerStat = game.stats.find(stat => stat["Shirt number"] === player.jerseyNumber);
-                  if (playerStat && playerStat.Position === 'F') {
-                    position = 'F';
-                  }
-                }
-              });
-              return position === 'F';
-            }).length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-4">
-                {players.filter(player => {
-                  let position = "Unknown";
-                  games.forEach(game => {
-                    if (game.stats && Array.isArray(game.stats)) {
-                      const playerStat = game.stats.find(stat => stat["Shirt number"] === player.jerseyNumber);
-                      if (playerStat && playerStat.Position === 'F') {
-                        position = 'F';
-                      }
-                    }
-                  });
-                  return position === 'F';
-                }).map(player => {
-                  return (
-                    <Link key={player.id} href={`/playerProfile/${id}/${player.id}`}>
-                      <div className="bg-white p-5 rounded-xl shadow-md hover:shadow-xl transition-all cursor-pointer">
-                        <div className="flex items-center justify-between">
-                          <div className="flex flex-col space-y-2">
-                            <h3 className="font-semibold text-lg text-gray-800">{player.firstName} {player.lastName}</h3>
-                            <p className="text-sm text-gray-600">Position: Forward</p>
-                          </div>
-                          <div className="text-right text-3xl font-impact text-emerald-800">
-                            #{player.jerseyNumber}
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-gray-500">No forwards found for this team.</p>
-            )}
-
-            {/* Defense Section */}
-            <p className="text-lg font-semibold text-gray-700 mt-6">Defense</p>
-            {players.filter(player => {
-              let position = "Unknown";
-              games.forEach(game => {
-                if (game.stats && Array.isArray(game.stats)) {
-                  const playerStat = game.stats.find(stat => stat["Shirt number"] === player.jerseyNumber);
-                  if (playerStat && playerStat.Position === 'D') {
-                    position = 'D';
-                  }
-                }
-              });
-              return position === 'D';
-            }).length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-4">
-                {players.filter(player => {
-                  let position = "Unknown";
-                  games.forEach(game => {
-                    if (game.stats && Array.isArray(game.stats)) {
-                      const playerStat = game.stats.find(stat => stat["Shirt number"] === player.jerseyNumber);
-                      if (playerStat && playerStat.Position === 'D') {
-                        position = 'D';
-                      }
-                    }
-                  });
-                  return position === 'D';
-                }).map(player => {
-                  return (
-                    <Link key={player.id} href={`/playerProfile/${id}/${player.id}`}>
-                      <div className="bg-white p-5 rounded-xl shadow-md hover:shadow-xl transition-all cursor-pointer">
-                        <div className="flex items-center justify-between">
-                          <div className="flex flex-col space-y-2">
-                            <h3 className="font-semibold text-lg text-gray-800">{player.firstName} {player.lastName}</h3>
-                            <p className="text-sm text-gray-600">Position: Defense</p>
-                          </div>
-                          <div className="text-right text-3xl font-impact text-emerald-800">
-                            #{player.jerseyNumber}
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-gray-500">No defense players found for this team.</p>
-            )}
-          </section>
-
-
-
-
-
-
-
-
-          <section className="mt-8">
-  <h2 className="text-2xl font-impact text-gray-800 mb-4">Games</h2>
-  {games.length > 0 ? (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6 mt-6">
-      {games
-        .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate))
-        .map(game => {
-          let result = '';
-          let resultClass = 'text-gray-500'; // Default for Tie
-          if (game.teamScore > game.opponentScore) {
-            result = 'Win';
-            resultClass = 'text-emerald-800'; // Green for Win
-          } else if (game.teamScore < game.opponentScore) {
-            result = 'Loss';
-            resultClass = 'text-red-500'; // Red for Loss
-          } else if (game.teamScore === game.opponentScore) {
-            result = 'Tie';
-            resultClass = 'text-gray-500'; // Gray for Tie
-          }
-
-          return (
-            <Link key={game.id} href={`/gameProfiles/${game.id}`}>
-              <div className="bg-white p-5 rounded-xl shadow-md hover:shadow-xl transition-all cursor-pointer relative">
-                <div className="flex flex-col h-full">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg">
-                      <span className="font-impact text-emerald-800">
-                        {game.location === "Away" ? `@  ` : `vs `}
-                      </span>
-                      <span className="text-xl font-semibold text-gray-900 ml-2">
-                        {game.opponent}
-                      </span>
-                    </h3>
-                    <div className="flex items-center ml-auto">
-                      
-                    <div className={`text-3xl font-impact ${resultClass} ml-auto p-2 rounded-md`}>
-                      {game.teamScore} - {game.opponentScore}
-                    </div>
-                    
-                    
-                     </div>
-                  </div>
-                  <p className="text-sm">{game.gameDate} </p>
-
-                  {/*}
-                  <div className="flex justify-between items-center mb-2">
-                    <span className={`font-semibold text-xl ${resultClass}`}>{result}</span>
-                  </div>*/}
+          <>
+            {/* Team Header */}
+            <div className="bg-white border-l-8  border-emerald-800 rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10">
+              <h1 className="text-3xl  font-extrabold text-gray-900 tracking-wide">
+                {teamData.gender}'s {teamData.sport} - {teamData.school}
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-700 mt-3 font-medium">
+                Team Code: <span className="text-emerald-800 font-semibold">{teamData.teamCode}</span>
+              </p>
+            </div>
+  
+            {/* Players Section */}
+            <section className="mb-12">
+            <div className="bg-white border-l-8  border-emerald-800 rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10">
+                <h2 className="text-3xl font-extrabold tracking-wide uppercase text-gray-900 mb-6 border-b-4 border-emerald-800 inline-block pb-2 shadow-sm">
+                  Players
+                </h2>
+  
+                {/* Forwards */}
+                <div className="mb-10">
+                  <p className="text-lg font-semibold text-gray-700 mb-4">Forwards</p>
+                  {renderPlayersByPosition('F')}
+                </div>
+  
+                {/* Defense */}
+                <div>
+                  <p className="text-lg font-semibold text-gray-700 mb-4">Defense</p>
+                  {renderPlayersByPosition('D')}
                 </div>
               </div>
-            </Link>
-          );
-        })}
-    </div>
-  ) : (
-    <p className="text-gray-500">No games found for this team.</p>
-  )}
-</section>
+            </section>
+  
+            {/* Games Section */}
+            <section className="mb-12">
+            <div className="bg-white border-l-8 border-emerald-800 rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10">
+                <h2 className="text-3xl font-extrabold tracking-wide uppercase text-gray-900 mb-6 border-b-4 border-emerald-800 inline-block pb-2 shadow-sm">
+                  Games
+                </h2>
+  
+                {games.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                    {games
+                      .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate))
+                      .map(game => {
+                        const isWin = game.teamScore > game.opponentScore;
+                        const isLoss = game.teamScore < game.opponentScore;
+                        const resultClass = isWin
+                          ? 'text-emerald-800'
+                          : isLoss
+                          ? 'text-red-500'
+                          : 'text-gray-500';
+  
+                        return (
+                          <Link key={game.id} href={`/gameProfiles/${game.id}`}>
+                            <div className="bg-gray-50 p-5 rounded-xl shadow hover:shadow-lg transition cursor-pointer">
+                              <div className="flex justify-between items-center mb-2">
+                                <h3 className="text-lg font-semibold text-gray-800">
+                                  {game.location === 'Away' ? '@' : 'vs'} {game.opponent}
+                                </h3>
+                                <span className={`text-xl font-impact ${resultClass}`}>
+                                  {game.teamScore} - {game.opponentScore}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600">{game.gameDate}</p>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No games found for this team.</p>
+                )}
+              </div>
+            </section>
+  
+            {/* Action Buttons */}
+<div className="flex flex-col items-center gap-4 mb-12">
+  <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+    <button
+      onClick={toggleModal}
+      className="bg-emerald-600 text-white px-6 py-3 rounded-md hover:bg-emerald-700 transition shadow-md"
+    >
+      Add New Game
+    </button>
 
-
-
-
-
-
-
-
-
-
-
-
-
-          {/* Add Game Button */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={toggleModal}
-              className="bg-emerald-500 text-white px-6 py-3 rounded-md hover:bg-emerald-600 transition-all duration-200 shadow-md transform hover:scale-105"
-            >
-              Add New Game
-            </button>
-          </div>
-
-          {/* Delete Team Button */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={toggleDeleteModal}
-              className="text-red-600 text-sm hover:text-red-700 transition-all duration-200"
-            >
-              Delete Team
-            </button>
-          </div>
-        </div>
-      ) : (
-        <p className="text-red-500 text-xl">Team not found.</p>
-      )}
-
-      {/* Modal */}
-{isModalOpen && (
-  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-    <div className="bg-white p-8 rounded-lg shadow-lg w-96 max-w-full transform transition-all duration-300 scale-95 hover:scale-100">
-      <h3 className="text-2xl font-semibold text-gray-800 mb-6 text-center">Upload New Game</h3>
-      <Dropbox teamId={id} />
-      <button
-        onClick={toggleModal}
-        className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-2xl focus:outline-none"
-      >
-        ✖
-      </button>
-      <button
-        onClick={toggleModal}
-        className="mt-6 bg-emerald-600 text-white px-6 py-3 rounded-md hover:bg-emerald-700 transition-all duration-200 w-full text-lg font-semibold"
-      >
-        Enter
-      </button>
-    </div>
+    <button
+      onClick={() => router.push(`/yearStats/${id}`)}
+      className="bg-emerald-500 text-white px-6 py-3 rounded-md hover:bg-emerald-600 transition shadow-md"
+    >
+      View Year Stats
+    </button>
   </div>
-)}
 
-{/* Delete Confirmation Modal */}
-{isDeleteModalOpen && (
-  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-    <div className="bg-white p-8 rounded-lg shadow-lg w-96 max-w-full transform transition-all duration-300 scale-95 hover:scale-100">
-      <h3 className="text-2xl text-center font-semibold text-gray-800 mb-6">Are you sure you want to delete this team?</h3>
-      <div className="flex justify-between gap-4">
-        <button
-          onClick={deleteTeam}
-          className="bg-red-600 text-white px-6 py-3 rounded-md hover:bg-red-700 transition-all duration-200 w-full text-lg font-semibold"
-        >
-          Yes
-        </button>
-        <button
-          onClick={toggleDeleteModal}
-          className="bg-gray-500 text-white px-6 py-3 rounded-md hover:bg-gray-600 transition-all duration-200 w-full text-lg font-semibold"
-        >
-          No thanks
-        </button>
+  {/* Delete Button below */}
+  <button
+    onClick={toggleDeleteModal}
+    className="mt-2 text-red-600 text-sm hover:text-red-700 transition"
+  >
+    Delete Team
+  </button>
+</div>
+
+  
+            {/* Upload Game Modal */}
+            {isModalOpen && (
+              <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+                <div className="relative bg-white p-8 rounded-lg shadow-lg w-96 max-w-full">
+                  <h3 className="text-2xl font-semibold text-gray-800 mb-6 text-center">Upload New Game</h3>
+                  <Dropbox teamId={id} />
+                  <button
+                    onClick={toggleModal}
+                    className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-2xl"
+                  >
+                    ✖
+                  </button>
+                  <button
+                    onClick={toggleModal}
+                    className="mt-6 bg-emerald-600 text-white px-6 py-3 rounded-md hover:bg-emerald-700 w-full font-semibold"
+                  >
+                    Enter
+                  </button>
+                </div>
+              </div>
+            )}
+  
+            {/* Delete Modal */}
+            {isDeleteModalOpen && (
+              <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+                <div className="bg-white p-8 rounded-lg shadow-lg w-96 max-w-full">
+                  <h3 className="text-2xl text-center font-semibold text-gray-800 mb-6">
+                    Are you sure you want to delete this team?
+                  </h3>
+                  <div className="flex gap-4">
+                    <button
+                      onClick={deleteTeam}
+                      className="bg-red-600 text-white px-6 py-3 rounded-md hover:bg-red-700 w-full font-semibold"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      onClick={toggleDeleteModal}
+                      className="bg-gray-500 text-white px-6 py-3 rounded-md hover:bg-gray-600 w-full font-semibold"
+                    >
+                      No thanks
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-red-500 text-center text-xl">Team not found.</p>
+        )}
       </div>
     </div>
-  </div>
-)}
-
-    </div>
   );
-}
+  
+  
+  function renderPlayersByPosition(position) {
+    const filtered = players.filter(player =>
+      games.some(game =>
+        game.stats?.some(stat =>
+          stat["Shirt number"] === player.jerseyNumber && stat.Position === position
+        )
+      )
+    );
+  
+    if (filtered.length === 0) {
+      return (
+        <p className="text-gray-500">
+          No {position === 'F' ? 'forwards' : 'defense'} found.
+        </p>
+      );
+    }
+  
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        {filtered.map(player => (
+          <Link key={player.id} href={`/playerProfile/${id}/${player.id}`}>
+            <div className="bg-gray-50 p-5 rounded-xl shadow hover:shadow-lg transition cursor-pointer">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {player.firstName} {player.lastName}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Position: {position === 'F' ? 'Forward' : 'Defense'}
+                  </p>
+                </div>
+                <span className="text-3xl font-impact text-emerald-800">
+                  #{player.jerseyNumber}
+                </span>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    );
+  }
+}  
 
 
 

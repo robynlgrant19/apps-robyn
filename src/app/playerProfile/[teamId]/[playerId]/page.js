@@ -14,6 +14,13 @@ const convertTimeToSeconds = (timeStr) => {
   return minutes * 60 + seconds; 
 };
 
+const convertSecondsToTime = (totalSeconds) => {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
+
+
 export default function PlayerProfile() {
   const { teamId, playerId } = useParams();
   const [player, setPlayer] = useState(null);
@@ -21,6 +28,21 @@ export default function PlayerProfile() {
   const [gameStats, setGamesStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const [selectedGameIndex, setSelectedGameIndex] = useState(0);
+  const hockeySayings = [
+    'Sharpening skates...',
+    'Taping sticks...',
+    'Warming up the goalie...',
+    'Flooding the ice...',
+    'Crunching the numbers...',
+    'Sniping top shelf...'
+  ];
+  const [loadingMessage, setLoadingMessage] = useState('');
+
+useEffect(() => {
+  const randomIndex = Math.floor(Math.random() * hockeySayings.length);
+  setLoadingMessage(hockeySayings[randomIndex]);
+}, []);
 
   useEffect(() => {
     if (!playerId) return;
@@ -65,6 +87,7 @@ export default function PlayerProfile() {
         let totalPowerPlayShots = 0;
         let totalShortHandedShots = 0;
         let totalPenaltiesDrawn = 0;
+        let totalPenaltyTime
       
         const gameStats = [];
 
@@ -96,6 +119,13 @@ export default function PlayerProfile() {
             const timeOnIceInSeconds = stat['Time on ice'] === "-" ? 0 : convertTimeToSeconds(stat['Time on ice']);
             
             const averageShiftLength = timeOnIceInSeconds/stat['All shifts'];
+
+            const penaltyTimeSeconds = stat['Penalty time'] === "-" || stat['Penalty time'] === "0" || !stat['Penalty time']
+              ? 0
+              : convertTimeToSeconds(stat['Penalty time']);
+
+              totalPenaltyTime += penaltyTimeSeconds;
+
             
             
             gameStats.push({ 
@@ -111,6 +141,8 @@ export default function PlayerProfile() {
               date: gameData.gameDate,
               shifts: stat['All shifts'],
               shiftLength: averageShiftLength,
+              faceoffs: stat.Faceoffs === '-' ? 0 : Number(stat.Faceoffs || 0),
+              faceoffsWon: stat['Faceoffs won'] === '-' ? 0 : Number(stat['Faceoffs won'] || 0),
             });
           });
         });
@@ -130,7 +162,8 @@ export default function PlayerProfile() {
           BlockedShots: totalBlockedShots,
           PowerPlayShots: totalPowerPlayShots,
           ShortHandedShots: totalShortHandedShots,
-          PenaltiesDrawn: totalPenaltiesDrawn
+          PenaltiesDrawn: totalPenaltiesDrawn,
+          PenaltyTime: totalPenaltyTime,
         });
         setGamesStats(gameStats);
         setLoading(false);
@@ -144,7 +177,20 @@ export default function PlayerProfile() {
     }
   }, [player]);
 
-  if (loading) return <h2 className="text-3xl text-center font-semibold text-gray-800 mt-4">You have no statistics yet!</h2>;
+  
+  
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-white text-gray-800">
+        <div className="animate-spin rounded-full border-t-4 border-b-4 border-gray-800 w-14 h-14 mb-6"></div>
+        <h2 className="text-2xl font-semibold">{loadingMessage}</h2>
+      </div>
+    );
+  }
+  
+  
+  
+  
   if (!player) return <p>Player not found</p>;
 
   //sort games in chrono order
@@ -162,12 +208,12 @@ export default function PlayerProfile() {
           cumulativeStats.Assists,
           cumulativeStats['+/-']
         ],
-        backgroundColor: 'rgba(34, 197, 94, 0.2)', 
-        borderColor: 'rgba(34, 197, 94, 1)', 
-        pointBackgroundColor: 'rgba(34, 197, 94, 1)', 
-        pointBorderColor: 'rgba(34, 197, 94, 1)', 
-        pointHoverBackgroundColor: 'rgba(34, 197, 94, 0.5)',
-        pointHoverBorderColor: 'rgba(34, 197, 94, 1)'
+        backgroundColor: 'rgba(0, 128, 0, 0.3)',
+        borderColor: 'rgba(0, 128, 0, 1)', 
+        pointBackgroundColor: 'rgba(0, 128, 0, 0.3)', 
+        pointBorderColor: 'rgba(0, 128, 0, 1)',
+        pointHoverBackgroundColor: 'rgba(0, 128, 0, 0.3)',
+        pointHoverBorderColor: 'rgba(0, 128, 0, 1)',
       }
     ]
   };
@@ -199,39 +245,55 @@ export default function PlayerProfile() {
     datasets: [
       {
         label: 'Goals',
-        data: gameStats.map((stat) => stat.goals),
+        data: gameStats.map((stat) => Number(stat.goals) || 0),
         backgroundColor: 'rgba(0, 128, 0, 0.3)', 
         borderColor: 'rgba(0, 128, 0, 1)', 
         borderWidth: 1
       },
       {
         label: 'Assists',
-        data: gameStats.map((stat) => stat.assists),
+        data: gameStats.map((stat) => Number(stat.assists) || 0),
         backgroundColor: 'rgba(144, 238, 144, 0.5)', 
         borderColor: 'rgba(144, 238, 144, 1)', 
         borderWidth: 1
       }
-      
-      
     ]
   };
+  
 
   const barOptionsForPoints = {
     responsive: true,
     scales: {
       x: {
-        beginAtZero: true
+        stacked: true,
+        title: {
+          display: true,
+          text: 'Game'
+        }
       },
       y: {
-        beginAtZero: true
+        stacked: true,
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Amount'
+        },
+        ticks: {
+          stepSize: 1 
+        }
       }
     },
     plugins: {
       legend: {
         position: 'top'
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false
       }
     }
   };
+  
 
   // line chart
   const lineData = {
@@ -261,10 +323,18 @@ export default function PlayerProfile() {
     responsive: true,
     scales: {
       x: {
-        beginAtZero: true
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Game'
+        }
       },
       y: {
-        beginAtZero: true
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Time (minutes)'
+        }
       }
     },
     plugins: {
@@ -295,10 +365,18 @@ export default function PlayerProfile() {
     responsive: true,
     scales: {
       x: {
-        beginAtZero: true
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Game'
+        }
       },
       y: {
-        beginAtZero: true
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Time (seconds)'
+        }
       }
     },
     plugins: {
@@ -316,14 +394,15 @@ export default function PlayerProfile() {
         label: 'Faceoffs',
         data: [
           cumulativeStats.FaceoffsWon,
-          cumulativeStats.Faceoffs - cumulativeStats.FaceoffsWon // Calculate Faceoffs Lost
+          cumulativeStats.Faceoffs - cumulativeStats.FaceoffsWon
         ],
-        backgroundColor: ['rgba(0, 128, 0, 0.3)', 'rgba(144, 238, 144, 0.5)'], // Change color for lost faceoffs
-        borderColor: ['rgba(0, 128, 0, 1)', 'rgba(144, 238, 144, 1)'],
-        borderWidth: 3
+        backgroundColor: ['rgba(34, 197, 94, 0.6)', 'rgba(239, 68, 68, 0.2)'], // bold green & faint red
+        borderColor: ['rgba(22, 163, 74, 1)', 'rgba(239, 68, 68, 0.5)'],     // strong green & soft red
+        borderWidth: 2
       }
     ]
   };
+  
 
   //console.log("Game Stats Shots:", gameStats.map((stat) => stat.shots));
 
@@ -334,86 +413,68 @@ export default function PlayerProfile() {
     labels: gameStats.map((stat) => {
       const homeOrAway = stat.location === "Away" ? `@ ${stat.opponent}` : `vs ${stat.opponent}`;
       return [homeOrAway, stat.date];
-    }),  
+    }),
     datasets: [
       {
-        label: 'Shots',
-        data: gameStats.map((stat) => stat.shots),
-        backgroundColor: 'rgba(0, 128, 0, 0.3)', 
-        borderColor: 'rgba(0, 128, 0, 1)', 
+        label: 'Missed Shots',
+        data: gameStats.map((stat) => {
+          const shots = Number(stat.shots) || 0;
+          const sog = Number(stat.shotsOnGoal) || 0;
+          return Math.max(shots - sog, 0);
+        }),
+        backgroundColor: 'rgba(239, 68, 68, 0.2)', 
+        borderColor: 'rgba(239, 68, 68, 0.5)', 
         borderWidth: 1
       },
       {
         label: 'Shots on Goal',
-        data: gameStats.map((stat) => stat.shotsOnGoal),
-        backgroundColor: 'rgba(144, 238, 144, 0.5)', 
-        borderColor: 'rgba(144, 238, 144, 1)', 
+        data: gameStats.map((stat) => Number(stat.shotsOnGoal) || 0),
+        backgroundColor: 'rgba(34, 197, 94, 0.6)', 
+        borderColor: 'rgba(22, 163, 74, 1)', 
         borderWidth: 1
       }
-      
-      
     ]
   };
+  
 
   const barOptionsForShots = {
     responsive: true,
     scales: {
       x: {
-        beginAtZero: true
+        stacked: true,
+        title: {
+          display: true,
+          text: 'Game'
+        }
       },
       y: {
-        beginAtZero: true
+        stacked: true,
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Number of Shots'
+        }
       }
     },
     plugins: {
       legend: {
         position: 'top'
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+          footer: (tooltipItems) => {
+            const total = tooltipItems.reduce((sum, item) => sum + item.parsed.y, 0);
+            return `Total Shots: ${total}`;
+          }
+        }
       }
     }
   };
-
-  const scatterData = {
-    labels: gameStats.map((stat) => stat.game),
-    datasets: [
-      {
-        label: 'Shots vs Goals',
-        data: gameStats.map((stat, index) => ({
-          x: stat.shots,
-          y: stat.goals === '-' ? 0 : stat.goals
-        })),
-        backgroundColor: 'rgba(144, 238, 144, 0.5)', 
-        borderColor: 'rgba(144, 238, 144, 1)',
-        borderWidth: 1,
-        pointRadius: 5,
-      }
-    ]
-  };
-
   
-  const scatterOptions = {
-    responsive: true,
-    scales: {
-      x: {
-        beginAtZero: true,
-        title: {
-          display: true,
-          text: 'Shots'
-        }
-      },
-      y: {
-        beginAtZero: true,
-        title: {
-          display: true,
-          text: 'Goals'
-        }
-      }
-    },
-    plugins: {
-      legend: {
-        position: 'top'
-      }
-    }
-  };
+  
+  
   
 
   
@@ -421,96 +482,108 @@ export default function PlayerProfile() {
 
 
   return (
-
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* Back Button */}
-      {/*<button 
-        className="text-green-600 px-6 py-3 text-3xl rounded-md mb-6 hover-green-900"
-        onClick={() => router.push(`/pages/homePlayer`)}
-      >
-        ⬅
-      </button>
-      */}
-    <div className="max-w-4xl mx-auto p-6 bg-white shadow-md rounded-md">
-  <h1 className="text-2xl font-impact text-gray-900">
-    {player.firstName} {player.lastName}
-  </h1>
-  <p className="text-gray-600">#{player.jerseyNumber}</p>
-  <div className="text-gray-600">
-    {gameStats.length > 0 && (
-      gameStats[0].position === 'F' ? 'Forward' : 
-      gameStats[0].position === 'D' ? 'Defense' : 
-      'Position not available'
-    )}
+      <nav className="bg-gradient-to-r from-emerald-900 to-emerald-500 w-full p-4 shadow-md fixed top-0 left-0 z-50">
+  <div className="container mx-auto flex justify-between items-center">
+  <button
+          onClick={() => router.back()}
+          className="text-white px-4 py-2 text-xl"
+        >
+          ⬅
+        </button>
+    <h1 className="text-white text-2xl font-semibold">RG PERFORMANCE</h1>
+    
+    
+  </div>
+</nav>
+      
+  
+      <div className="max-w-5xl mx-auto mt-20">
+      <div className="bg-white border-l-8 border-emerald-800 rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10">
+  <div className="flex justify-between items-center">
+    {/* Left Side: Player Info */}
+    <div>
+      <h1 className="text-3xl font-extrabold text-gray-900 tracking-wide uppercase">
+        {player.firstName} {player.lastName}
+      </h1>
+      <div className="text-lg text-gray-600 mt-1">
+        {gameStats.length > 0 && (
+          gameStats[0].position === 'F' ? 'Forward' :
+          gameStats[0].position === 'D' ? 'Defense' :
+          'Position not available'
+        )}
+      </div>
+    </div>
+
+    {/* Right Side: Jersey Number */}
+    <div className="text-4xl sm:text-5xl font-impact text-emerald-800">
+      #{player.jerseyNumber}
+    </div>
+  </div>
+</div>
+
+        
+
+       
+  <div className="mt-4 grid md:grid-cols-2 gap-6">
+  {/* Vertical Stat Summary Card */}
+  <div className="bg-white rounded-2xl shadow-md p-6 space-y-4">
+    <h2 className="text-xl font-semibold text-gray-800">Cumulative Stats</h2>
+    <div className="space-y-3">
+      <div className="flex justify-between border-b pb-2">
+        <span className="text-gray-600 font-medium">Points</span>
+        <span className="font-semibold text-gray-900">{cumulativeStats.Points}</span>
+      </div>
+      <div className="flex justify-between border-b pb-2">
+        <span className="text-gray-600 font-medium">Goals</span>
+        <span className="font-semibold text-gray-900">{cumulativeStats.Goals}</span>
+      </div>
+      <div className="flex justify-between border-b pb-2">
+        <span className="text-gray-600 font-medium">Assists</span>
+        <span className="font-semibold text-gray-900">{cumulativeStats.Assists}</span>
+      </div>
+      <div className="flex justify-between">
+        <span className="text-gray-600 font-medium">Plus/Minus</span>
+        <span className="font-semibold text-gray-900">{cumulativeStats['+/-']}</span>
+      </div>
+    </div>
   </div>
 
+  {/* Radar Chart */}
+  <div className="bg-white rounded-2xl shadow-md p-6">
+    <Radar data={radarData} options={radarOptions} />
+  </div>
+</div>
 
-  
-      <div className="mt-4 flex gap-6">
-        <div className="flex-1">
-          <h2 className="text-xl font-semibold">Cumulative Stats</h2>
-          <table className="w-full mt-4 bg-green-100 border rounded-lg shadow-md">
-            <thead>
-              <tr className="bg-green-500 text-white rounded-t-lg">
-                <th className="p-3 text-left">Points</th>
-                <th className="p-3 text-left">Goals</th>
-                <th className="p-3 text-left">Assists</th>
-                <th className="p-3 text-left">Plus/Minus</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="odd:bg-green-50 even:bg-green-200">
-                <td className="p-3">{cumulativeStats.Points}</td>
-                <td className="p-3">{cumulativeStats.Goals}</td>
-                <td className="p-3">{cumulativeStats.Assists}</td>
-                <td className="p-3">{cumulativeStats['+/-']}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-  
-        <div className="flex-1">
-          
-          <Radar data={radarData} options={radarOptions} />
-        </div>
-      </div>
 
-      
-      <div className="mt-6">
+<h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-6">
+    Around the Net
+    </h2>
+      <div className="bg-white rounded-2xl shadow-md p-6 mt-6">
         <h2 className="text-xl font-semibold">Goals and Assists per Game</h2>
         <Bar data={barDataForPoints} options={barOptionsForPoints} />
       </div>
 
-      
-      <div className="mt-6">
+      <div className="bg-white rounded-2xl shadow-md p-6 mt-6">
+        <h2 className="text-xl font-semibold">Shots vs Shots on Goal per Game</h2>
+        <Bar data={barDataForShots} options={barOptionsForShots} />
+      </div>
+
+      <h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-6">
+    Ice Time
+    </h2>
+      <div className="bg-white rounded-2xl shadow-md p-6 mt-6">
         <h2 className="text-xl font-semibold">Ice Time & Total Shifts per Game</h2>
         <Line data={lineData} options={lineOptions} />
       </div>
 
-      <div className="mt-6">
+      <div className="bg-white rounded-2xl shadow-md p-6 mt-6">
         <h2 className="text-xl font-semibold">Average Shift Length per Game</h2>
         <Bar data={barDataForShiftLength} options={barOptionsForShiftLength} />
       </div>
 
-      <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-2">Faceoffs Won vs Faceoffs Lost</h2>
-        <h2 className="text-xl font-bold text-center text-black-600 mb-4">
-  Total Faceoffs:
-</h2>
-<h3 className="text-2xl font-bold text-center text-green-600 mb-4">
-  {cumulativeStats.Faceoffs}
-</h3>
-
-      <div className="w-80 h-80 mx-auto"> 
-        <Pie data={pieData} options={{ maintainAspectRatio: false }} />
-      </div>
-      </div>
-
       
-      <div className="mt-6">
-        <h2 className="text-xl font-semibold">Shots vs Shots on Goal per Game</h2>
-        <Bar data={barDataForShots} options={barOptionsForShots} />
-      </div>
+      
 
 {/*
       <div className="mt-6">
@@ -523,57 +596,156 @@ export default function PlayerProfile() {
 
 
 <div className="mt-6">
-<h2 className="text-xl font-semibold">Defensive Statistics</h2>
+<h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-6">
+    Defensive Statistics
+    </h2>
 <div className="mt-6 flex gap-6">
   
-      <div className="flex-1 bg-green-100 p-6 rounded-lg shadow-md flex flex-col justify-center items-center">
+      <div className="flex-1 bg-white rounded-2xl shadow-md p-6 space-y-4 flex flex-col justify-center items-center">
         <h3 className="text-xl font-semibold text-black">Total Hits</h3>
-        <p className="text-4xl font-bold text-green-600 mt-2">{cumulativeStats.Hits}</p>
+        <p className="text-4xl font-bold text-emerald-800 mt-2">{cumulativeStats.Hits}</p>
       </div>
 
-      <div className="flex-1 bg-green-100 p-6 rounded-lg shadow-md flex flex-col justify-center items-center">
+      <div className="flex-1 bg-white rounded-2xl shadow-md p-6 space-y-4 flex flex-col justify-center items-center">
         <h3 className="text-xl font-semibold text-black">Total Blocked Shots</h3>
-        <p className="text-4xl font-bold text-green-600 mt-2">{cumulativeStats.BlockedShots}</p>
+        <p className="text-4xl font-bold text-emerald-800 mt-2">{cumulativeStats.BlockedShots}</p>
       </div>
     </div>
     </div>
 
     <div className="mt-6">
-<h2 className="text-xl font-semibold">Special Teams</h2>
+    <h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-6">
+    Special Teams
+    </h2>
 <div className="mt-6 flex gap-6">
   
-      <div className="flex-1 bg-green-100 p-6 rounded-lg shadow-md flex flex-col justify-center items-center">
+      <div className="flex-1 bg-white rounded-2xl shadow-md p-6 space-y-4 flex flex-col justify-center items-center">
         <h3 className="text-xl font-semibold text-black">Total Power Play Shots</h3>
-        <p className="text-4xl font-bold text-green-600 mt-2">{cumulativeStats.PowerPlayShots}</p>
+        <p className="text-4xl font-bold text-emerald-800 mt-2">{cumulativeStats.PowerPlayShots}</p>
       </div>
 
-      <div className="flex-1 bg-green-100 p-6 rounded-lg shadow-md flex flex-col justify-center items-center">
+      <div className="flex-1 bg-white rounded-2xl shadow-md p-6 space-y-4 flex flex-col justify-center items-center">
         <h3 className="text-xl font-semibold text-black">Total Short Handed Shots</h3>
-        <p className="text-4xl font-bold text-green-600 mt-2">{cumulativeStats.ShortHandedShots}</p>
+        <p className="text-4xl font-bold text-emerald-800 mt-2">{cumulativeStats.ShortHandedShots}</p>
       </div>
 
       
     </div>
     </div>
-
     <div className="mt-6">
-<h2 className="text-xl font-semibold">Penalties</h2>
+    <h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-6">
+    Special Teams
+    </h2>
 <div className="mt-6 flex gap-6">
   
-      <div className="flex-1 bg-green-100 p-6 rounded-lg shadow-md flex flex-col justify-center items-center">
+      <div className="flex-1 bg-white rounded-2xl shadow-md p-6 space-y-4 flex flex-col justify-center items-center">
         <h3 className="text-xl font-semibold text-black">Total Penalties Drawn</h3>
-        <p className="text-4xl font-bold text-green-600 mt-2">{cumulativeStats.PenaltiesDrawn}</p>
+        <p className="text-4xl font-bold text-emerald-800 mt-2">{cumulativeStats.PenaltiesDrawn}</p>
       </div>
-      {/*
-      <div className="flex-1 bg-green-100 p-6 rounded-lg shadow-md flex flex-col justify-center items-center">
-        <h3 className="text-xl font-semibold text-black">Shift Length</h3>
-        <p className="text-4xl font-bold text-green-600 mt-2">{stat.shiftLength}</p>
-      </div>
-      */}
-    </div>
-    </div>
-  
       
+      <div className="flex-1 bg-white rounded-2xl shadow-md p-6 space-y-4 flex flex-col justify-center items-center">
+  <h3 className="text-xl font-semibold text-black">Total Penalty Time</h3>
+  <p className="text-4xl font-bold text-emerald-800 mt-2">{convertSecondsToTime(cumulativeStats.PenaltyTime || 0)}</p>
+</div>
+      
+    </div>
+    </div>
+
+    <h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-6">
+    Faceoffs
+    </h2>
+    <div className="bg-white rounded-2xl shadow-md p-6 mt-6">
+        <h2 className="text-xl font-semibold mb-2">Faceoffs Won vs Faceoffs Lost</h2>
+        <h2 className="text-xl font-bold text-center text-black-600 mb-4">
+          Total Faceoffs:
+        </h2>
+        <h3 className="text-2xl font-bold text-center text-emerald-800 mb-4">
+          {cumulativeStats.Faceoffs}
+        </h3>
+
+      <div className="w-80 h-80 mx-auto"> 
+        <Pie data={pieData} options={{ maintainAspectRatio: false }} />
+      </div>
+      </div>
+{/*
+    <div className="mt-6">
+  <h2 className="text-xl font-semibold mb-4">Faceoffs per Game</h2>
+  <div className="grid md:grid-cols-2 gap-6">
+    {gameStats.map((stat, index) => {
+      const data = {
+        labels: ['Won', 'Lost'],
+        datasets: [
+          {
+            data: [stat.faceoffsWon, stat.faceoffs - stat.faceoffsWon],
+            backgroundColor: ['rgba(34, 197, 94, 0.6)', 'rgba(239, 68, 68, 0.2)'],
+            borderColor: ['rgba(22, 163, 74, 1)', 'rgba(239, 68, 68, 0.5)'],
+            borderWidth: 2
+          }
+        ]
+      };
+
+      return (
+        <div key={index} className="bg-white rounded-2xl shadow-md p-4">
+          <h3 className="text-center font-semibold text-gray-800 mb-2">
+            {stat.location === 'Away' ? `@ ${stat.opponent}` : `vs ${stat.opponent}`} — {stat.date}
+          </h3>
+          <div className="w-64 h-64 mx-auto">
+            <Pie data={data} options={{ maintainAspectRatio: false }} />
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</div>
+*/}
+
+<div className="mt-6">
+  <h2 className="text-xl font-semibold mb-4">Faceoffs per Game</h2>
+
+  <div className="mb-4">
+    <label className="block text-gray-700 font-medium mb-2">Select a Game:</label>
+    <select
+      value={selectedGameIndex}
+      onChange={(e) => setSelectedGameIndex(Number(e.target.value))}
+      className="w-full md:w-1/2 border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+    >
+      {gameStats.map((stat, index) => (
+        <option key={index} value={index}>
+          {stat.location === 'Away' ? `@ ${stat.opponent}` : `vs ${stat.opponent}`} — {stat.date}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  {gameStats[selectedGameIndex] && (
+    <div className="bg-white rounded-2xl shadow-md p-4">
+      <h3 className="text-center font-semibold text-gray-800 mb-2">
+        {gameStats[selectedGameIndex].location === 'Away'
+          ? `@ ${gameStats[selectedGameIndex].opponent}`
+          : `vs ${gameStats[selectedGameIndex].opponent}`} — {gameStats[selectedGameIndex].date}
+      </h3>
+      <div className="w-64 h-64 mx-auto">
+        <Pie
+          data={{
+            labels: ['Won', 'Lost'],
+            datasets: [
+              {
+                data: [
+                  gameStats[selectedGameIndex].faceoffsWon,
+                  gameStats[selectedGameIndex].faceoffs - gameStats[selectedGameIndex].faceoffsWon,
+                ],
+                backgroundColor: ['rgba(34, 197, 94, 0.6)', 'rgba(239, 68, 68, 0.2)'],
+                borderColor: ['rgba(22, 163, 74, 1)', 'rgba(239, 68, 68, 0.5)'],
+                borderWidth: 2,
+              },
+            ],
+          }}
+          options={{ maintainAspectRatio: false }}
+        />
+      </div>
+    </div>
+  )}
+</div>  
     </div>
     
     </div>

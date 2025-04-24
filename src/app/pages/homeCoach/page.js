@@ -109,7 +109,7 @@ export default function CoachHome() {
       
       <div className="flex-grow pt-20 w-full">
         
-        <div className="max-w-4xl w-full bg-white shadow-lg rounded-xl p-8 my-8 mx-auto">
+        <div className="max-w-4xl w-full bg-white  shadow-lg rounded-xl p-8 my-8 mx-auto">
           {loading ? (
             <div className="text-center text-gray-500">Loading coach data...</div>
           ) : coachData ? (
@@ -180,7 +180,7 @@ export default function CoachHome() {
       placeholder="Enter Team Code"
       value={teamCodeInput}
       onChange={(e) => setTeamCodeInput(e.target.value)}
-      className="w-full px-4 py-2 border rounded-lg"
+      className="w-full px-4 py-2 border rounded-lg outline-emerald-500"
     />
     <button
       onClick={handleJoinTeam}
