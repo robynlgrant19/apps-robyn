@@ -18,7 +18,7 @@ export default function TeamPage() {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const [message, setMessage] = useState(0);
+  const [message, setMessage] = useState('');
   
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * hockeySayings.length);
@@ -74,7 +74,10 @@ export default function TeamPage() {
         setGames(gamesData);
       }
 
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
+      
     };
 
     fetchTeamData();
@@ -129,8 +132,13 @@ export default function TeamPage() {
   
       {loading ? (
   <div className="flex flex-col items-center justify-center h-screen text-gray-800">
-    <div className="animate-spin rounded-full border-t-4 border-b-4 border-gray-800 w-14 h-14 mb-6"></div>
-    <h2 className="text-2xl font-semibold">{message}</h2>
+    <img
+  src="/puck.png"
+  alt="Loading..."
+  className="w-16 h-16 mb-6 object-contain animate-spin-slow"
+/>
+<h2 className="text-2xl font-semibold">{message}</h2>
+
   </div>
 ) : teamData ? (
 
