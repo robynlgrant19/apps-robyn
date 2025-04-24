@@ -380,47 +380,62 @@ const barDataShotsStacked = {
   labels: sortedGameStatsShots.map(stat => `#${stat.player}`),
   datasets: [
     {
-      label: 'Shots on Goal',
-      data: sortedGameStatsShots.map(stat => stat.shotsOnGoal),
-      backgroundColor: 'rgba(144, 238, 144, 0.5)', 
-      borderColor: 'rgba(144, 238, 144, 1)', 
+      label: 'Missed Shots',
+      data: sortedGameStatsShots.map(stat => {
+        const shots = Number(stat.shots) || 0;
+        const sog = Number(stat.shotsOnGoal) || 0;
+        return Math.max(shots - sog, 0);
+      }),
+      backgroundColor: 'rgba(239, 68, 68, 0.2)',
+      borderColor: 'rgba(239, 68, 68, 0.5)',
       borderWidth: 1
     },
     {
-      label: 'Shots',
-      data: sortedGameStatsShots.map(stat => Math.max(stat.shots, 0)),
-      backgroundColor: 'rgba(0, 128, 0, 0.3)', 
-      borderColor: 'rgba(0, 128, 0, 1)', 
+      label: 'Shots on Goal',
+      data: sortedGameStatsShots.map(stat => Number(stat.shotsOnGoal) || 0),
+      backgroundColor: 'rgba(34, 197, 94, 0.6)',
+      borderColor: 'rgba(22, 163, 74, 1)',
       borderWidth: 1
-    },
+    }
   ]
 };
-
-
-
 
 const barOptionsShotsStacked = {
   responsive: true,
   scales: {
     x: {
       stacked: true,
-      title: { display: true, text: 'Player' }
+      title: {
+        display: true,
+        text: 'Player'
+      }
     },
     y: {
       stacked: true,
       beginAtZero: true,
-      title: { display: true, text: 'Total Shots' }
+      title: {
+        display: true,
+        text: 'Number of Shots'
+      }
     }
   },
   plugins: {
-    legend: { display: true },
+    legend: {
+      position: 'top'
+    },
     tooltip: {
+      mode: 'index',
+      intersect: false,
       callbacks: {
-        label: (context) => `${context.dataset.label}: ${context.parsed.y}`
+        footer: (tooltipItems) => {
+          const total = tooltipItems.reduce((sum, item) => sum + item.parsed.y, 0);
+          return `Total Shots: ${total}`;
+        }
       }
     }
   }
 };
+
 
 
 const barDataPlusMinus = {
