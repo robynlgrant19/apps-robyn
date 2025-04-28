@@ -34,8 +34,13 @@ export default function PlayerProfile() {
     'Taping sticks...',
     'Warming up the goalie...',
     'Flooding the ice...',
-    'Sniping top shelf...',
-    'Changing lines...',
+    'Sniping top shelf...', 
+    'Lacing up the skates',
+    'Making a line change...', 
+    'Stacking the pads...',
+    'Going bar down...',
+    'Backchecking hard...',
+    'Blocking a shot...'
   ];
   const [loadingMessage, setLoadingMessage] = useState('');
 
@@ -190,7 +195,7 @@ useEffect(() => {
        <img
           src="/puck.png"
           alt="Loading..."
-          className="w-16 h-16 mb-6 object-contain animate-spin-slow"
+          className="w-16 h-16 mb-6 object-contain animate-spin"
         />
         <h2 className="text-2xl font-semibold">{loadingMessage}</h2>
       </div>

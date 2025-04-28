@@ -4,7 +4,7 @@ import { collection, query, where, getDocs, updateDoc, addDoc } from "firebase/f
 import * as XLSX from "xlsx"; 
 import { useState } from "react";
 
-export default function Dropbox({ teamId }) {
+export default function Dropbox({ teamId, onGameUploaded }) {
   const [gameDate, setGameDate] = useState(""); 
   const [opponent, setOpponent] = useState(""); 
   const [location, setLocation] = useState("Home");
@@ -45,7 +45,7 @@ export default function Dropbox({ teamId }) {
         createdAt: new Date(),
       });
 
-      console.log("Game stats uploaded for Game:", opponent, "on", gameDate);
+      
 
       
       for (const row of jsonData) {

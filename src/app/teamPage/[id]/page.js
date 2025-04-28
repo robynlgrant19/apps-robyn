@@ -7,7 +7,9 @@ import { doc, getDoc, collection, query, where, getDocs, deleteDoc } from "fireb
 import Link from "next/link";
 import Dropbox from "../../components/dropzone";
 import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, CategoryScale, LinearScale, BarElement, ArcElement } from 'chart.js';
-import AuthDetails from "../../components/auth/authDetails";
+//import AuthDetails from "../../components/auth/authDetails";
+import CalendarView from "../../components/calendarView";
+
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, CategoryScale, LinearScale, BarElement, ArcElement);
 
@@ -19,6 +21,7 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const [message, setMessage] = useState('');
+  const [viewMode, setViewMode] = useState('list');
   
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * hockeySayings.length);
@@ -30,8 +33,13 @@ export default function TeamPage() {
     'Taping sticks...',
     'Warming up the goalie...',
     'Flooding the ice...',
-    'Crunching the numbers...',
-    'Sniping top shelf...'
+    'Sniping top shelf...', 
+    'Lacing up the skates',
+    'Making a line change...', 
+    'Stacking the pads...',
+    'Going bar down...',
+    'Backchecking hard...',
+    'Blocking a shot...'
   ];
   
 
@@ -135,7 +143,7 @@ export default function TeamPage() {
     <img
   src="/puck.png"
   alt="Loading..."
-  className="w-16 h-16 mb-6 object-contain animate-spin-slow"
+  className="w-16 h-16 mb-6 object-contain animate-spin"
 />
 <h2 className="text-2xl font-semibold">{message}</h2>
 
@@ -177,44 +185,62 @@ export default function TeamPage() {
   
             {/* Games Section */}
             <section className="mb-12">
+            <div className="flex justify-end mb-4">
+  <button
+    onClick={() => setViewMode('list')}
+    className={`px-4 py-2 rounded-l-md ${viewMode === 'list' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'} hover:bg-emerald-700 transition`}
+  >
+    List View
+  </button>
+  <button
+    onClick={() => setViewMode('calendar')}
+    className={`px-4 py-2 rounded-r-md ${viewMode === 'calendar' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'} hover:bg-emerald-700 transition`}
+  >
+    Calendar View
+  </button>
+</div>
+
             <div className="bg-white border-l-8 border-emerald-800 rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10">
                 <h2 className="text-3xl font-extrabold tracking-wide uppercase text-gray-900 mb-6 border-b-4 border-emerald-800 inline-block pb-2 shadow-sm">
                   Games
                 </h2>
   
-                {games.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    {games
-                      .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate))
-                      .map(game => {
-                        const isWin = game.teamScore > game.opponentScore;
-                        const isLoss = game.teamScore < game.opponentScore;
-                        const resultClass = isWin
-                          ? 'text-emerald-800'
-                          : isLoss
-                          ? 'text-red-500'
-                          : 'text-gray-500';
-  
-                        return (
-                          <Link key={game.id} href={`/gameProfiles/${game.id}`}>
-                            <div className="bg-gray-50 p-5 rounded-xl shadow hover:shadow-lg transition cursor-pointer">
-                              <div className="flex justify-between items-center mb-2">
-                                <h3 className="text-lg font-semibold text-gray-800">
-                                  {game.location === 'Away' ? '@' : 'vs'} {game.opponent}
-                                </h3>
-                                <span className={`text-xl font-impact ${resultClass}`}>
-                                  {game.teamScore} - {game.opponentScore}
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-600">{game.gameDate}</p>
-                            </div>
-                          </Link>
-                        );
-                      })}
-                  </div>
-                ) : (
-                  <p className="text-gray-500">No games found for this team.</p>
-                )}
+                {viewMode === 'list' ? (
+  // --- List View ---
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+    {games
+      .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate))
+      .map(game => {
+        const isWin = game.teamScore > game.opponentScore;
+        const isLoss = game.teamScore < game.opponentScore;
+        const resultClass = isWin
+          ? 'text-emerald-800'
+          : isLoss
+          ? 'text-red-500'
+          : 'text-gray-500';
+
+        return (
+          <Link key={game.id} href={`/gameProfiles/${game.id}`}>
+            <div className="bg-gray-50 p-5 rounded-xl shadow hover:shadow-lg transition cursor-pointer">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  {game.location === 'Away' ? '@' : 'vs'} {game.opponent}
+                </h3>
+                <span className={`text-xl font-impact ${resultClass}`}>
+                  {game.teamScore} - {game.opponentScore}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600">{game.gameDate}</p>
+            </div>
+          </Link>
+        );
+      })}
+  </div>
+) : (
+  // --- Calendar View ---
+  <CalendarView games={games} />
+)}
+
               </div>
             </section>
   
@@ -342,7 +368,8 @@ export default function TeamPage() {
       </div>
     );
   }
-}  
+
+}
 
 
 

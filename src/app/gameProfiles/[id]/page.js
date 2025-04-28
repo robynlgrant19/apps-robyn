@@ -78,8 +78,13 @@ export default function TeamProfile() {
     'Taping sticks...',
     'Warming up the goalie...',
     'Flooding the ice...',
-    'Crunching the numbers...',
-    'Sniping top shelf...'
+    'Sniping top shelf...', 
+    'Lacing up the skates',
+    'Making a line change...', 
+    'Stacking the pads...',
+    'Going bar down...',
+    'Backchecking hard...',
+    'Blocking a shot...'
   ];
   const [loadingMessage, setLoadingMessage] = useState('');
 
@@ -246,7 +251,7 @@ useEffect(() => {
        <img
           src="/puck.png"
           alt="Loading..."
-          className="w-16 h-16 mb-6 object-contain animate-spin-slow"
+          className="w-16 h-16 mb-6 object-contain animate-spin"
         />
         <h2 className="text-2xl font-semibold">{loadingMessage}</h2>
       </div>
@@ -712,7 +717,8 @@ return (
           <option value="D">Defensemen</option>
         </select>
       </div>
-      <Bar data={generateBarData(filteredStatsShift, 'shiftLength')} options={barOptions} />
+      <Bar data={generateBarData(sortedGameStatsShift, 'shiftLength')} options={barOptions} />
+
     </div>
 
     {/* ice time bar */}
