@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '../../firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import TeamLeaders from '../../components/TeamLeaders';
 import { Bar, Radar, Line } from 'react-chartjs-2';
 import {
@@ -19,6 +19,7 @@ import {
   BarElement,
   Title
 } from 'chart.js';
+import { teamColorClasses } from "../../teamColors";
 
 ChartJS.register(
   RadialLinearScale,
@@ -68,11 +69,29 @@ export default function YearStats() {
     'Blocking a shot...'
   ];
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [teamColors, setTeamColors] = useState(null);
 
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * hockeySayings.length);
     setLoadingMessage(hockeySayings[randomIndex]);
   }, []);
+
+  useEffect(() => {
+    const fetchTeamColors = async () => {
+      if (!teamId) return;
+  
+      const teamRef = doc(db, 'teams', teamId);
+      const teamSnap = await getDoc(teamRef);
+  
+      if (teamSnap.exists()) {
+        const team = teamSnap.data();
+        const school = team.school?.trim();
+        setTeamColors(teamColorClasses[school] || {});
+      }
+    };
+  
+    fetchTeamColors();
+  }, [teamId]);
   
 
   
@@ -372,7 +391,7 @@ setPlusMinusChartData(filteredForPlusMinus);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <nav className="bg-gradient-to-r from-emerald-900 to-emerald-500 w-full p-4 shadow-md fixed top-0 left-0 z-50">
+      <nav className={`w-full p-4 shadow-md fixed top-0 left-0 z-50 ${teamColors?.gradient}`}>
   <div className="container mx-auto flex justify-between items-center">
   <button
           onClick={() => router.back()}
@@ -386,7 +405,7 @@ setPlusMinusChartData(filteredForPlusMinus);
   </div>
 </nav>
 <div className="max-w-5xl mx-auto mt-20">
-<div className="bg-white border-l-8  border-emerald-800 rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10 mt-20">
+<div className={`bg-white border-l-8 ${teamColors.border} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10 mt-20`}>
 <h2 className="text-3xl font-semibold">Season Stats</h2>
              
             </div>
@@ -428,31 +447,31 @@ setPlusMinusChartData(filteredForPlusMinus);
       <h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2">
     Team Leaders
   </h2>
-      <TeamLeaders teamLeaders={teamLeaders} />
+      <TeamLeaders teamLeaders={teamLeaders} teamColors={teamColors}/>
 
       <div className="mt-10 px-6">
   <div className="overflow-x-auto rounded-lg shadow border border-gray-300">
     <table className="min-w-full bg-white text-sm text-left">
       <thead className="bg-gray-100 sticky top-0 z-10">
         <tr>
-          <th className="px-6 py-4 font-semibold text-gray-700 cursor-pointer hover:text-emerald-600">#</th>
-          <th className="px-6 py-4 font-semibold text-gray-700 cursor-pointer hover:text-emerald-600">Player</th>
-          <th className="px-6 py-4 font-semibold text-gray-700 text-center cursor-pointer hover:text-emerald-600">G</th>
-          <th className="px-6 py-4 font-semibold text-gray-700 text-center cursor-pointer hover:text-emerald-600">A</th>
-          <th className="px-6 py-4 font-semibold text-gray-700 text-center cursor-pointer hover:text-emerald-600">PTS</th>
+          <th className={`px-6 py-4 font-semibold text-gray-700 cursor-pointer hover: ${teamColors.text}`}>#</th>
+          <th className={`px-6 py-4 font-semibold text-gray-700 cursor-pointer hover:${teamColors.text}`}>Player</th>
+          <th className= {`px-6 py-4 font-semibold text-gray-700 text-center cursor-pointer hover:${teamColors.text}`}>G</th>
+          <th className= {`px-6 py-4 font-semibold text-gray-700 text-center cursor-pointer hover:${teamColors.text}`}>A</th>
+          <th className= {`px-6 py-4 font-semibold text-gray-700 text-center cursor-pointer hover: ${teamColors.text}`}>PTS</th>
         </tr>
       </thead>
       <tbody>
         {teamLeaders.points.map((player, index) => (
           <tr
             key={index}
-            className="hover:bg-emerald-50 border-b border-gray-200 transition duration-150"
+            className={` ${teamColors.hoverBg} border-b border-gray-200 transition duration-150`}
           >
             <td className="px-6 py-4 text-gray-800 font-medium">#{player.jersey ?? '--'}</td>
             <td className="px-6 py-4 text-gray-900 font-semibold">{player.name}</td>
             <td className="px-6 py-4 text-center text-gray-700">{player.goals ?? 0}</td>
             <td className="px-6 py-4 text-center text-gray-700">{player.assists ?? 0}</td>
-            <td className="px-6 py-4 text-center font-bold text-emerald-600">{player.points ?? 0}</td>
+            <td className={`px-6 py-4 text-center font-bold ${teamColors.text}`}>{player.points ?? 0}</td>
           </tr>
         ))}
       </tbody>
@@ -637,7 +656,7 @@ setPlusMinusChartData(filteredForPlusMinus);
 
  <div className="bg-white p-6 rounded-xl shadow mb-12 text-center mt-2">
         <h2 className="text-xl font-semibold mb-2">Faceoff %</h2>
-        <p className="text-3xl font-bold text-emerald-600">{teamFaceoffPercentage}</p>
+        <p className={`text-3xl font-bold ${teamColors.text}`}>{teamFaceoffPercentage}</p>
       </div>
 
 

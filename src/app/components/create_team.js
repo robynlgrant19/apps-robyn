@@ -28,6 +28,7 @@ export default function CreateTeam({ onClose, onTeamCreated }) {
     try {
       const user = auth.currentUser;
       
+      
       // Create team in Firestore
       await addDoc(collection(db, "teams"), {
         gender: teamGender,

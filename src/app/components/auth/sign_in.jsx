@@ -25,13 +25,17 @@ const SignIn = () => {
 
       const playerRef = doc(db, "players", user.uid);
       const playerSnap = await getDoc(playerRef);
-
+      
+      if (user.email === "robynlgrant19@gmail.com" && password === "WilsonCedar1010") {
+        router.replace("/pages/admin");
+        return;
+      }
       if (coachSnap.exists()) {
         router.replace("/pages/homeCoach");
       } else if (playerSnap.exists()) {
         router.replace("/pages/homePlayer");
       } else {
-        router.replace("/pages/admin");
+        setErrorMessage("Your account could not be found.")
       }
 
     } catch (error) {

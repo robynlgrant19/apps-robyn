@@ -24,6 +24,7 @@ export default function PlayerSignUp() {
             firstName: firstName,
             lastName: lastName,
             jerseyNumber: jerseyNumber,
+            position: position,
             email: email,
             role:"player",
             uid: user.uid,

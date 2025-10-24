@@ -17,6 +17,7 @@ export default function PlayerHome() {
   const [teams, setTeams] = useState([]);
   const [user, setUser] = useState(null);
   const [jerseyNumber, setJerseyNumber] = useState("");
+  //const [position, setPosition] = useState("");
 
   const fetchPlayerData = async (user) => {
     if (!user) return;
@@ -31,6 +32,12 @@ export default function PlayerHome() {
     const teamsRef = collection(db, "teams");
     const q = query(teamsRef, where("players", "array-contains", user.uid));
     const querySnapshot = await getDocs(q);
+
+    // check if jersey number already exists
+    if (!querySnapshot.empty) {
+        setError(`Jersey #${jerseyNumber} is already taken for this team.`);
+        return;
+      }
 
     const teamsData = querySnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -56,39 +63,77 @@ export default function PlayerHome() {
   }, []);
 
   const handleSubmit = async () => {
+  setError(""); // clear previous errors
+
+  /*
+  if (!position) {
+    setError("Please select your position");
+    return;
+  }*/
+
+  if (!jerseyNumber) {
+    setError("Please enter your jersey number");
+    return;
+  }
+
+  try {
+    // Find the team by code
     const teamRef = collection(db, "teams");
     const teamQuery = query(teamRef, where("teamCode", "==", teamCode));
     const querySnapshot = await getDocs(teamQuery);
 
-    if (!querySnapshot.empty) {
-      const teamDoc = querySnapshot.docs[0];
-      const teamData = teamDoc.data();
-
-      if (teamData.players.includes(auth.currentUser.uid)) {
-        setError("You are already part of this team.");
-        return;
-      }
-
-      // Update team with the player
-      await updateDoc(teamDoc.ref, {
-        players: arrayUnion(auth.currentUser.uid),
-      });
-
-      // Update player with the jersey number
-      await updateDoc(doc(db, "players", auth.currentUser.uid), {
-        jerseyNumber: jerseyNumber,
-      });
-
-      // After joining the team, re-fetch the player data to update the teams
-      await fetchPlayerData(auth.currentUser);
-
-      setIsModalOpen(false);
-      setTeamCode("");
-      setJerseyNumber("");
-    } else {
+    if (querySnapshot.empty) {
       setError("Invalid team code.");
+      return;
     }
-  };
+
+    const teamDoc = querySnapshot.docs[0];
+    const teamData = teamDoc.data();
+
+    // Check if the player is already on the team
+    if (teamData.players.includes(auth.currentUser.uid)) {
+      setError("You are already part of this team.");
+      return;
+    }
+
+    // Check jersey number uniqueness within this team
+    const jerseyQuery = query(
+      collection(db, "players"),
+      where("teamId", "==", teamDoc.id),
+      where("jerseyNumber", "==", Number(jerseyNumber))
+    );
+    const jerseySnapshot = await getDocs(jerseyQuery);
+
+    if (!jerseySnapshot.empty) {
+      setError(`Jersey #${jerseyNumber} is already taken for this team.`);
+      return;
+    }
+
+    // Add player UID to the team’s players array
+    await updateDoc(teamDoc.ref, {
+      players: arrayUnion(auth.currentUser.uid),
+    });
+
+    // Update player document with jersey number  and teamId
+    await updateDoc(doc(db, "players", auth.currentUser.uid), {
+      jerseyNumber: Number(jerseyNumber),
+      teamId: teamDoc.id,
+    });
+
+    // Refresh player data
+    await fetchPlayerData(auth.currentUser);
+
+    // Clear modal form
+    setIsModalOpen(false);
+    setTeamCode("");
+    setJerseyNumber("");
+    setPosition("");
+  } catch (err) {
+    console.error(err);
+    setError("Failed to join the team. Please try again.");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center">
@@ -115,7 +160,6 @@ export default function PlayerHome() {
                 <h2 className="text-3xl font-semibold text-gray-800 mt-4">
                   {playerData.firstName} {playerData.lastName}
                 </h2>
-                <p className="text-lg text-gray-600">{playerData.position}</p>
               </div>
             </div>
           ) : (
@@ -160,18 +204,35 @@ export default function PlayerHome() {
             type="text"
             value={teamCode}
             onChange={(e) => setTeamCode(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full text-md px-4 py-3 rounded-md bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
             placeholder="e.g. ABC123"
           />
-          {error && <p className="text-red-600">{error}</p>}
+
           <h2 className="text-gray-800">Jersey Number</h2>
           <input
             type="number"
             value={jerseyNumber}
             onChange={(e) => setJerseyNumber(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full text-md px-4 py-3 rounded-md bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
             placeholder="e.g. 19"
           />
+
+{/*
+          <h2 className="text-gray-800">Position</h2>
+          <select
+            value={position}
+            onChange={(e) => setPosition(e.target.value)}
+            className="w-full text-md px-4 py-3 rounded-md bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+          >
+            <option value="" disabled>Select your position</option>
+            <option value="F">Forward</option>
+            <option value="D">Defense</option>
+            <option value="G">Goalie</option>
+          </select>*/}
+
+
+
+
           <button
             onClick={handleSubmit}
             className="w-full px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"

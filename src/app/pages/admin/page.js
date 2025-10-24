@@ -40,6 +40,7 @@ export default function Admin() {
       <h1 className="text-white text-xl font-bold">RG Performance</h1>
       <AuthDetails />
     </nav>
+    
 
       
       <div className="flex flex-col items-center justify-center mt-10">

@@ -6,6 +6,8 @@ import { db } from '../../../firebase';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { Radar, Bar, Line, Pie, Scatter } from 'react-chartjs-2'; 
 import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, CategoryScale, LinearScale, BarElement, ArcElement } from 'chart.js';
+import { teamColorClasses } from "../../../teamColors";
+
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, CategoryScale, LinearScale, BarElement, ArcElement);
 
@@ -29,6 +31,7 @@ export default function PlayerProfile() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const [selectedGameIndex, setSelectedGameIndex] = useState(0);
+  const [teamColors, setTeamColors] = useState(null);
   const hockeySayings = [
     'Sharpening skates...',
     'Taping sticks...',
@@ -71,6 +74,30 @@ useEffect(() => {
   }, [playerId]);
 
   useEffect(() => {
+    const fetchTeamColors = async () => {
+      if (!teamId) return;
+  
+      try {
+        const teamRef = doc(db, 'teams', teamId);
+        const teamSnap = await getDoc(teamRef);
+  
+        if (teamSnap.exists()) {
+          const team = teamSnap.data();
+          const schoolName = team.school?.trim();
+          setTeamColors(teamColorClasses[schoolName] || {});
+          console.log("Resolved school:", schoolName);
+          console.log("Team colors:", teamColorClasses[schoolName]);
+        }
+      } catch (error) {
+        console.error("Error fetching team colors:", error);
+      }
+    };
+  
+    fetchTeamColors();
+  }, [teamId]);
+  
+
+  useEffect(() => {
     const fetchCumulativeStats = async () => {
       try {
         if (!player || !player.jerseyNumber) return;
@@ -78,6 +105,9 @@ useEffect(() => {
         const jerseyNumberString = String(player.jerseyNumber);
         const gamesRef = collection(db, 'games');
         const querySnapshot = await getDocs(gamesRef);
+
+        const teamGames = querySnapshot.docs.filter(doc => doc.data().teamId === teamId);
+
 
         let totalPoints = 0;
         let totalGoals = 0;
@@ -98,7 +128,7 @@ useEffect(() => {
 
         
 
-        querySnapshot.forEach((doc) => {
+        teamGames.forEach((doc) => {
           const gameData = doc.data();
           const playerStats = gameData.stats?.filter(stat => stat['Shirt number'] === jerseyNumberString);
           //const position = gameData.stats?.Position;
@@ -496,7 +526,7 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <nav className="bg-gradient-to-r from-emerald-900 to-emerald-500 w-full p-4 shadow-md fixed top-0 left-0 z-50">
+      <nav className={`w-full p-4 shadow-md fixed top-0 left-0 z-50 ${teamColors?.gradient}`}>
   <div className="container mx-auto flex justify-between items-center">
   <button
           onClick={() => router.back()}
@@ -512,7 +542,7 @@ useEffect(() => {
       
   
       <div className="max-w-5xl mx-auto mt-20">
-      <div className="bg-white border-l-8 border-emerald-800 rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10">
+      <div className= {`bg-white border-l-8 ${teamColors.border} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10`}>
   <div className="flex justify-between items-center">
     {/* Left Side: Player Info */}
     <div>
@@ -529,7 +559,7 @@ useEffect(() => {
     </div>
 
     {/* Right Side: Jersey Number */}
-    <div className="text-4xl sm:text-5xl font-impact text-emerald-800">
+    <div className={`text-4xl sm:text-5xl font-impact ${teamColors.text}`}>
       #{player.jerseyNumber}
     </div>
   </div>
@@ -616,12 +646,12 @@ useEffect(() => {
   
       <div className="flex-1 bg-white rounded-2xl shadow-md p-6 space-y-4 flex flex-col justify-center items-center">
         <h3 className="text-xl font-semibold text-black">Total Hits</h3>
-        <p className="text-4xl font-bold text-emerald-800 mt-2">{cumulativeStats.Hits}</p>
+        <p className={`text-4xl font-bold ${teamColors.text} mt-2`}>{cumulativeStats.Hits}</p>
       </div>
 
       <div className="flex-1 bg-white rounded-2xl shadow-md p-6 space-y-4 flex flex-col justify-center items-center">
         <h3 className="text-xl font-semibold text-black">Total Blocked Shots</h3>
-        <p className="text-4xl font-bold text-emerald-800 mt-2">{cumulativeStats.BlockedShots}</p>
+        <p className={`text-4xl font-bold ${teamColors.text} mt-2`}>{cumulativeStats.BlockedShots}</p>
       </div>
     </div>
     </div>
@@ -634,12 +664,12 @@ useEffect(() => {
   
       <div className="flex-1 bg-white rounded-2xl shadow-md p-6 space-y-4 flex flex-col justify-center items-center">
         <h3 className="text-xl font-semibold text-black">Total Power Play Shots</h3>
-        <p className="text-4xl font-bold text-emerald-800 mt-2">{cumulativeStats.PowerPlayShots}</p>
+        <p className={`text-4xl font-bold ${teamColors.text} mt-2`}>{cumulativeStats.PowerPlayShots}</p>
       </div>
 
       <div className="flex-1 bg-white rounded-2xl shadow-md p-6 space-y-4 flex flex-col justify-center items-center">
         <h3 className="text-xl font-semibold text-black">Total Short Handed Shots</h3>
-        <p className="text-4xl font-bold text-emerald-800 mt-2">{cumulativeStats.ShortHandedShots}</p>
+        <p className={`text-4xl font-bold ${teamColors.text} mt-2`}>{cumulativeStats.ShortHandedShots}</p>
       </div>
 
       
@@ -653,12 +683,12 @@ useEffect(() => {
   
       <div className="flex-1 bg-white rounded-2xl shadow-md p-6 space-y-4 flex flex-col justify-center items-center">
         <h3 className="text-xl font-semibold text-black">Total Penalties Drawn</h3>
-        <p className="text-4xl font-bold text-emerald-800 mt-2">{cumulativeStats.PenaltiesDrawn}</p>
+        <p className={`text-4xl font-bold ${teamColors.text} mt-2`}>{cumulativeStats.PenaltiesDrawn}</p>
       </div>
       
       <div className="flex-1 bg-white rounded-2xl shadow-md p-6 space-y-4 flex flex-col justify-center items-center">
   <h3 className="text-xl font-semibold text-black">Total Penalty Time</h3>
-  <p className="text-4xl font-bold text-emerald-800 mt-2">{convertSecondsToTime(cumulativeStats.PenaltyTime || 0)}</p>
+  <p className={`text-4xl font-bold ${teamColors.text} mt-2`}>{convertSecondsToTime(cumulativeStats.PenaltyTime || 0)}</p>
 </div>
       
     </div>
@@ -672,7 +702,7 @@ useEffect(() => {
         <h2 className="text-xl font-bold text-center text-black-600 mb-4">
           Total Faceoffs:
         </h2>
-        <h3 className="text-2xl font-bold text-center text-emerald-800 mb-4">
+        <h3 className={`text-2xl font-bold text-center ${teamColors.text} mb-4`}>
           {cumulativeStats.Faceoffs}
         </h3>
 
@@ -720,7 +750,7 @@ useEffect(() => {
     <select
       value={selectedGameIndex}
       onChange={(e) => setSelectedGameIndex(Number(e.target.value))}
-      className="w-full md:w-1/2 border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      className={`w-full md:w-1/2 border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus: ${teamColors.ring}`}
     >
       {gameStats.map((stat, index) => (
         <option key={index} value={index}>
