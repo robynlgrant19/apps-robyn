@@ -107,6 +107,8 @@ export default function CoachHome() {
         </div>
       </nav>
 
+      
+
       <div className="flex-grow pt-20 w-full">
         <div className="max-w-4xl w-full bg-white shadow-lg rounded-xl p-8 my-8 mx-auto">
           {loading ? (

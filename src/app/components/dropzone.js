@@ -49,86 +49,117 @@ export default function Dropbox({ teamId, onGameUploaded }) {
 
       
       for (const row of jsonData) {
-        const jerseyNumber = row["Shirt number"];
-        if (!jerseyNumber) {
-          console.warn("Skipping row without jersey number:", row);
-          continue;
-        }
+  const jerseyNumber = row["Shirt number"];
+  if (!jerseyNumber) {
+    console.warn("Skipping row without jersey number:", row);
+    continue;
+  }
 
-        
-        const playersRef = collection(db, "players");
-        const q = query(playersRef, where("jerseyNumber", "==", jerseyNumber));
-        const querySnapshot = await getDocs(q);
+  const playersRef = collection(db, "players");
 
-        if (querySnapshot.empty) {
-          console.warn(`Player with jersey #${jerseyNumber} not found in Firestore`);
-          continue;
-        }
+  // Step 1 – main query
+  let q = query(
+    playersRef,
+    where("jerseyNumber", "==", jerseyNumber),
+    where("teamId", "==", teamId)
+  );
+  let querySnapshot = await getDocs(q);
 
-        
-        const playerDoc = querySnapshot.docs[0];
-        const playerRef = playerDoc.ref;
+  // Step 3 – fallback if empty
+  if (querySnapshot.empty) {
+    const teamRef = doc(db, "teams", teamId);
+    const teamSnap = await getDoc(teamRef);
+    const teamData = teamSnap.data();
 
-        await updateDoc(playerRef, {
-          [`games.${newGameDocRef.id}`]: row, 
-        });
+    if (teamData?.teamCode) {
+      const fallbackQ = query(
+        playersRef,
+        where("jerseyNumber", "==", jerseyNumber),
+        where("teamCode", "==", teamData.teamCode)
+      );
+      querySnapshot = await getDocs(fallbackQ);
+    }
+  }
 
-        console.log(`Updated stats for Player #${jerseyNumber}`);
-      }
+  if (querySnapshot.empty) {
+    console.warn(`Player with jersey #${jerseyNumber} not found.`);
+    continue;
+  }
+
+  const playerDoc = querySnapshot.docs[0];
+  const playerRef = playerDoc.ref;
+
+  // ✅ Step 4 – auto-backfill teamId if missing
+  if (!playerDoc.data().teamId) {
+    await updateDoc(playerRef, { teamId });
+    console.log(`Added missing teamId to player #${jerseyNumber}`);
+  }
+
+  // Now update their stats
+  await updateDoc(playerRef, {
+    [`games.${newGameDocRef.id}`]: row,
+  });
+
+  console.log(`✅ Updated stats for Player #${jerseyNumber}`);
+}
+
+
     };
     reader.readAsArrayBuffer(file);
   };
 
   return (
-    <div>
-      <input 
-        type="text" 
-        placeholder="Opponent" 
-        value={opponent} 
-        onChange={(e) => setOpponent(e.target.value)} 
-        className="mb-2 p-2 border border-gray-300 rounde outline-emerald-500"
-      />
-      <input 
-        type="date" 
-        value={gameDate} 
-        onChange={(e) => setGameDate(e.target.value)} 
-        className="mb-4 p-2 border border-gray-300 rounded outline-emerald-500"
-      />
-      <div className="gap-2">
-      <select 
-        value={location} 
-        onChange={(e) => setLocation(e.target.value)} 
-        className="mb-4 p-2 border border-gray-300 rounded outline-emerald-500">
-        <option value="Home">Home</option>
-        <option value="Away">Away</option>
-      </select>
-      </div>
+  <div className="flex flex-col space-y-4 w-full max-w-sm mx-auto">
+    <input 
+      type="text" 
+      placeholder="Opponent" 
+      value={opponent} 
+      onChange={(e) => setOpponent(e.target.value)} 
+      className="p-3 border border-gray-300 rounded-md outline-emerald-500 focus:ring-2 focus:ring-emerald-500 text-gray-800"
+    />
 
-      <div className="mb-4 p-2 border border-gray-300 rounded inline-flex items-center gap-2 w-80 outline-emerald-500">
-        <input 
-          type="number" 
-          placeholder="Your Score" 
-          value={teamScore} 
-          onChange={(e) => setTeamScore(Number(e.target.value))} 
-          className="p-2 w-32 border border-gray-300 rounded text-xs outline-emerald-500"
-        />
-        <span className="text-xl">-</span>
-        <input 
-          type="number" 
-          placeholder="Opponent Score" 
-          value={opponentScore} 
-          onChange={(e) => setOpponentScore(Number(e.target.value))} 
-          className="p-2 w-32 border border-gray-300 rounded text-xs outline-emerald-500"
-        />
-      </div>
+    <input 
+      type="date" 
+      value={gameDate} 
+      onChange={(e) => setGameDate(e.target.value)} 
+      className="p-3 border border-gray-300 rounded-md outline-emerald-500 focus:ring-2 focus:ring-emerald-500 text-gray-800"
+    />
 
+    <select 
+      value={location} 
+      onChange={(e) => setLocation(e.target.value)} 
+      className="p-3 border border-gray-300 rounded-md outline-emerald-500 focus:ring-2 focus:ring-emerald-500 text-gray-800"
+    >
+      <option value="Home">Home</option>
+      <option value="Away">Away</option>
+    </select>
+
+    <div className="flex items-center justify-between space-x-3">
       <input 
-        type="file" 
-        onChange={handleUpload} 
-        className="p-2 border border-gray-300 rounded"
+        type="number" 
+        placeholder="Your Score" 
+        value={teamScore} 
+        onChange={(e) => setTeamScore(Number(e.target.value))} 
+        className="p-3 border border-gray-300 rounded-md w-1/2 outline-emerald-500 focus:ring-2 focus:ring-emerald-500 text-gray-800"
+      />
+      <span className="text-xl font-bold text-gray-600">-</span>
+      <input 
+        type="number" 
+        placeholder="Opponent Score" 
+        value={opponentScore} 
+        onChange={(e) => setOpponentScore(Number(e.target.value))} 
+        className="p-3 border border-gray-300 rounded-md w-1/2 outline-emerald-500 focus:ring-2 focus:ring-emerald-500 text-gray-800"
       />
     </div>
-  );
+
+    <input 
+      type="file" 
+      onChange={handleUpload} 
+      className="p-3 border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 transition text-gray-700 cursor-pointer"
+    />
+  </div>
+);
+
 }
 
 

@@ -607,10 +607,10 @@ return (
         {gameInfo.teamScore} - {gameInfo.opponentScore}
       </p>
     </div>
-    <p className="text-gray-600 text-md">{gameInfo.gameDate}</p>
+    {/*<p className="text-gray-600 text-md">{gameInfo.gameDate}</p>*/}
   </div>
 )}
-
+{/*
 <div className="flex justify-end mb-4">
   <button
     onClick={() => router.push(`/manualEntry/${gameInfo.teamId}/edit/${id}`)}
@@ -618,7 +618,7 @@ return (
   >
     ✏️ Edit Game Info
   </button>
-</div>
+</div>*/}
 
       <div className="mt-4 grid md:grid-cols-2 gap-6">
         {/* summary */}

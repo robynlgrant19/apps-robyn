@@ -17,34 +17,29 @@ export default function PlayerHome() {
   const [teams, setTeams] = useState([]);
   const [user, setUser] = useState(null);
   const [jerseyNumber, setJerseyNumber] = useState("");
-  //const [position, setPosition] = useState("");
+  const [position, setPosition] = useState("");
 
-  const fetchPlayerData = async (user) => {
-    if (!user) return;
+ const fetchPlayerData = async (user) => {
+  if (!user) return;
 
-    const playerRef = doc(db, "players", user.uid);
-    const playerSnap = await getDoc(playerRef);
+  const playerRef = doc(db, "players", user.uid);
+  const playerSnap = await getDoc(playerRef);
 
-    if (playerSnap.exists()) {
-      setPlayerData(playerSnap.data());
-    }
+  if (playerSnap.exists()) {
+    setPlayerData(playerSnap.data());
+  }
 
-    const teamsRef = collection(db, "teams");
-    const q = query(teamsRef, where("players", "array-contains", user.uid));
-    const querySnapshot = await getDocs(q);
+  const teamsRef = collection(db, "teams");
+  const q = query(teamsRef, where("players", "array-contains", user.uid));
+  const querySnapshot = await getDocs(q);
 
-    // check if jersey number already exists
-    if (!querySnapshot.empty) {
-        setError(`Jersey #${jerseyNumber} is already taken for this team.`);
-        return;
-      }
+  const teamsData = querySnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+  setTeams(teamsData);
+};
 
-    const teamsData = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setTeams(teamsData);
-  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -63,13 +58,14 @@ export default function PlayerHome() {
   }, []);
 
   const handleSubmit = async () => {
+    console.log("✅ Submit button clicked");
   setError(""); // clear previous errors
 
-  /*
+  
   if (!position) {
     setError("Please select your position");
     return;
-  }*/
+  }
 
   if (!jerseyNumber) {
     setError("Please enter your jersey number");
@@ -118,6 +114,7 @@ export default function PlayerHome() {
     await updateDoc(doc(db, "players", auth.currentUser.uid), {
       jerseyNumber: Number(jerseyNumber),
       teamId: teamDoc.id,
+      position: position,
     });
 
     // Refresh player data
@@ -217,7 +214,7 @@ export default function PlayerHome() {
             placeholder="e.g. 19"
           />
 
-{/*
+
           <h2 className="text-gray-800">Position</h2>
           <select
             value={position}
@@ -228,7 +225,7 @@ export default function PlayerHome() {
             <option value="F">Forward</option>
             <option value="D">Defense</option>
             <option value="G">Goalie</option>
-          </select>*/}
+          </select>
 
 
 
