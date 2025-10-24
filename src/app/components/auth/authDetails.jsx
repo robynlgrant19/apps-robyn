@@ -14,47 +14,62 @@ const AuthDetails = () => {
 
   useEffect(() => {
   const listen = onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      setRedirecting(true);
+    if (!user) {
+      setAuthUser(null);
+      setLoading(false);
+      return;
+    }
 
-      const currentPath = window.location.pathname;
+    console.log("🧍 Logged in user:", user.uid);
 
-      // Admin user
-      if (user.email === "robynlgrant19@gmail.com") {
-        if (currentPath !== "/admin") {
-          router.replace("../pages/admin");
-        }
-        setAuthUser(user);
-        setRedirecting(false);
-        setLoading(false);
-        return;
-      }
+    // 🔍 Step 2: Add these debug logs here
+    const coachRef = doc(db, "coaches", user.uid);
+    const coachSnap = await getDoc(coachRef);
+    const playerRef = doc(db, "players", user.uid);
+    const playerSnap = await getDoc(playerRef);
 
-      // Check role
-      const coachRef = doc(db, "coaches", user.uid);
-      const coachSnap = await getDoc(coachRef);
-      const playerRef = doc(db, "players", user.uid);
-      const playerSnap = await getDoc(playerRef);
+    console.log("📄 coach exists?", coachSnap.exists());
+    console.log("📄 player exists?", playerSnap.exists());
 
-      if (coachSnap.exists() && currentPath !== "/homeCoach") {
-        router.replace("../pages/homeCoach");
-      } else if (playerSnap.exists() && currentPath !== "/homePlayer") {
-        router.replace("../pages/homePlayer");
-      } else if (!coachSnap.exists() && !playerSnap.exists() && currentPath !== "/admin") {
-        router.replace("../pages/admin");
-      }
+    setRedirecting(true);
+    const currentPath = window.location.pathname;
 
+    // ✅ Admin shortcut
+    if (user.email === "robynlgrant19@gmail.com") {
+      if (currentPath !== "/admin") router.replace("../pages/admin");
       setAuthUser(user);
       setRedirecting(false);
       setLoading(false);
-    } else {
-      setAuthUser(null);
-      setLoading(false);
+      return;
     }
+
+    // ✅ Wait for Firestore docs to appear (up to ~3 s)
+    let attempts = 0;
+    while (attempts < 6) {
+      if (coachSnap.exists() || playerSnap.exists()) break;
+      console.log(`⏳ Waiting for Firestore doc (attempt ${attempts + 1})...`);
+      await new Promise((r) => setTimeout(r, 500));
+      attempts++;
+    }
+
+    // ✅ Now redirect based on role
+    if (coachSnap.exists() && currentPath !== "/homeCoach") {
+      router.replace("../pages/homeCoach");
+    } else if (playerSnap.exists() && currentPath !== "/homePlayer") {
+      router.replace("../pages/homePlayer");
+    } else {
+      console.log("⚠️ No Firestore role found after waiting.");
+    }
+
+    setAuthUser(user);
+    setRedirecting(false);
+    setLoading(false);
   });
 
   return () => listen();
 }, [router]);
+
+
 
 
   // sign out
