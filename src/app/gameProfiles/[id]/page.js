@@ -119,9 +119,33 @@ useEffect(() => {
         }
   
         const gameData = gameSnap.data();
+        console.log(gameData);
         setGameInfo(gameData);
 
         const playerStatsCollection = gameData.stats || [];
+
+        if (playerStatsCollection.length === 0) {
+          // No player data – fallback to LiveStatForm values
+          setTeamStats({
+            Points: 0,
+            Goals: 0,
+            Assists: 0,
+            '+/-': 0,
+            FaceoffsWon: 0,
+            Faceoffs: 0,
+            Shots: gameData.shots ?? 0,
+            ShotsOnGoal: 0,
+            Hits: 0,
+            BlockedShots: 0,
+            PowerPlayShots: 0,
+            ShortHandedShots: 0,
+            PenaltiesDrawn: 0
+          });
+          setGameStats([]); // No player-level stats
+          setGameInfo(gameData);
+          setLoading(false);
+          return;
+        }
   
         const teamStats = {
           Points: 0,
@@ -586,6 +610,16 @@ return (
     <p className="text-gray-600 text-md">{gameInfo.gameDate}</p>
   </div>
 )}
+
+<div className="flex justify-end mb-4">
+  <button
+    onClick={() => router.push(`/manualEntry/${gameInfo.teamId}/edit/${id}`)}
+    className="px-4 py-2 bg-emerald-700 text-white rounded hover:bg-emerald-800 transition"
+  >
+    ✏️ Edit Game Info
+  </button>
+</div>
+
       <div className="mt-4 grid md:grid-cols-2 gap-6">
         {/* summary */}
       <div className="bg-white rounded-2xl shadow-md p-6 space-y-4 border border-gray-200">

@@ -13,34 +13,49 @@ const AuthDetails = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const listen = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setRedirecting(true); // Start hiding UI while redirecting
-        const coachRef = doc(db, "coaches", user.uid);
-        const coachSnap = await getDoc(coachRef);
-        const playerRef = doc(db, "players", user.uid);
-        const playerSnap = await getDoc(playerRef);
+  const listen = onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      setRedirecting(true);
 
-        if (coachSnap.exists()) {
-          router.replace("/../pages/homeCoach");
-        } else if (playerSnap.exists()) {
-          router.replace("/../pages/homePlayer");
-        } else {
-          router.replace("/../pages/admin");
+      const currentPath = window.location.pathname;
+
+      // Admin user
+      if (user.email === "robynlgrant19@gmail.com") {
+        if (currentPath !== "/admin") {
+          router.replace("../pages/admin");
         }
-
-        setTimeout(() => {
-          setAuthUser(user); 
-          setRedirecting(false);
-        }, 100); // delay to redirect
-      } else {
-        setAuthUser(null);
+        setAuthUser(user);
+        setRedirecting(false);
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    });
 
-    return () => listen(); 
-  }, [router]);
+      // Check role
+      const coachRef = doc(db, "coaches", user.uid);
+      const coachSnap = await getDoc(coachRef);
+      const playerRef = doc(db, "players", user.uid);
+      const playerSnap = await getDoc(playerRef);
+
+      if (coachSnap.exists() && currentPath !== "/homeCoach") {
+        router.replace("../pages/homeCoach");
+      } else if (playerSnap.exists() && currentPath !== "/homePlayer") {
+        router.replace("../pages/homePlayer");
+      } else if (!coachSnap.exists() && !playerSnap.exists() && currentPath !== "/admin") {
+        router.replace("../pages/admin");
+      }
+
+      setAuthUser(user);
+      setRedirecting(false);
+      setLoading(false);
+    } else {
+      setAuthUser(null);
+      setLoading(false);
+    }
+  });
+
+  return () => listen();
+}, [router]);
+
 
   // sign out
   const userSignOut = async () => {

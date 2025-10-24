@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-const TeamLeaders = ({ teamLeaders }) => {
+const TeamLeaders = ({ teamLeaders, teamColors }) => {
   const [activeTab, setActiveTab] = useState('points');
 
   const tabLabels = {
@@ -25,9 +25,10 @@ const TeamLeaders = ({ teamLeaders }) => {
             onClick={() => setActiveTab(key)}
             className={`text-lg tracking-wide font-bold uppercase py-2 transition duration-150 ${
               activeTab === key
-                ? 'text-emerald-800 border-b-4 border-emerald-800'
-                : 'text-gray-500 hover:text-emerald-600'
+                ? `${teamColors?.text} border-b-4 ${teamColors?.border}`
+                : `text-gray-500 hover:${teamColors?.text}`
             }`}
+            
           >
             {label}
           </button>
@@ -57,7 +58,7 @@ const TeamLeaders = ({ teamLeaders }) => {
       <p className="text-sm text-gray-500 uppercase font-semibold mb-1">
         {tabLabels[activeTab]}
       </p>
-      <div className="text-6xl font-black text-emerald-800 leading-none">
+      <div className= {`text-6xl font-black ${teamColors.text} leading-none`}>
         {topPlayer[activeTab]}
       </div>
     </div>
@@ -79,7 +80,7 @@ const TeamLeaders = ({ teamLeaders }) => {
                   <span className="text-sm text-gray-400 font-semibold w-8">#{player.jersey ?? '--'}</span>
                   <span className="text-base font-medium text-gray-800 truncate">{player.name}</span>
                 </div>
-                <span className="text-lg font-bold text-emerald-800">{player[activeTab]}</span>
+                <span className= {`text-lg font-bold ${teamColors.text}`}>{player[activeTab]}</span>
               </div>
             ))}
           </div>

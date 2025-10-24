@@ -9,6 +9,9 @@ import Dropbox from "../../components/dropzone";
 import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, CategoryScale, LinearScale, BarElement, ArcElement } from 'chart.js';
 //import AuthDetails from "../../components/auth/authDetails";
 import CalendarView from "../../components/calendarView";
+import { teamColorClasses } from "../../teamColors";
+
+
 
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend, CategoryScale, LinearScale, BarElement, ArcElement);
@@ -22,6 +25,9 @@ export default function TeamPage() {
   const router = useRouter();
   const [message, setMessage] = useState('');
   const [viewMode, setViewMode] = useState('list');
+  const [teamColors, setTeamColors] = useState(null);
+  const [hasHudl, setHasHudl] = useState(true);
+
   
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * hockeySayings.length);
@@ -61,6 +67,8 @@ export default function TeamPage() {
       if (teamSnap.exists()) {
         const team = teamSnap.data();
         setTeamData(team);
+        setTeamColors(teamColorClasses[team.school] || {});
+        setHasHudl(team.hasHudl ?? true);
 
         if (team.players && team.players.length > 0) {
           const playerPromises = team.players.map(async (playerId) => {
@@ -120,7 +128,7 @@ export default function TeamPage() {
   
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center">
-      <nav className="bg-gradient-to-r from-emerald-900 to-emerald-500 w-full p-4 shadow-md fixed top-0 left-0 z-50">
+      <nav className={`w-full p-4 shadow-md fixed top-0 left-0 z-50 ${teamColors?.gradient}`}>
   <div className="container mx-auto flex justify-between items-center">
   <button
           onClick={() => router.back()}
@@ -153,19 +161,19 @@ export default function TeamPage() {
 
           <>
             {/* Team Header */}
-            <div className="bg-white border-l-8  border-emerald-800 rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10">
+            <div className={`bg-white border-l-8 ${teamColors?.text} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10`}>
               <h1 className="text-3xl  font-extrabold text-gray-900 tracking-wide">
                 {teamData.gender}'s {teamData.sport} - {teamData.school}
               </h1>
               <p className="text-lg sm:text-xl text-gray-700 mt-3 font-medium">
-                Team Code: <span className="text-emerald-800 font-semibold">{teamData.teamCode}</span>
+                Team Code: <span className={`${teamColors?.text} font-semibold`}>{teamData.teamCode}</span>
               </p>
             </div>
   
             {/* Players Section */}
             <section className="mb-12">
-            <div className="bg-white border-l-8  border-emerald-800 rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10">
-                <h2 className="text-3xl font-extrabold tracking-wide uppercase text-gray-900 mb-6 border-b-4 border-emerald-800 inline-block pb-2 shadow-sm">
+            <div className={`bg-white border-l-8 ${teamColors?.text} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10`}>
+            <h2 className={`text-3xl font-extrabold tracking-wide uppercase text-gray-900 mb-6 border-b-4 ${teamColors?.text} inline-block pb-2 shadow-sm`}>
                   Players
                 </h2>
   
@@ -188,20 +196,28 @@ export default function TeamPage() {
             <div className="flex justify-end mb-4">
   <button
     onClick={() => setViewMode('list')}
-    className={`px-4 py-2 rounded-l-md ${viewMode === 'list' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'} hover:bg-emerald-700 transition`}
+    className={`px-4 py-2 rounded-l-md ${
+      viewMode === 'list'
+        ? `${teamColors?.bg} text-white`
+        : 'bg-gray-200 text-gray-700'
+    } ${teamColors?.hoverBg} transition`}
   >
     List View
   </button>
   <button
     onClick={() => setViewMode('calendar')}
-    className={`px-4 py-2 rounded-r-md ${viewMode === 'calendar' ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'} hover:bg-emerald-700 transition`}
+    className={`px-4 py-2 rounded-r-md ${
+      viewMode === 'calendar'
+        ? `${teamColors?.bg} text-white`
+        : 'bg-gray-200 text-gray-700'
+    } ${teamColors?.hoverBg} transition`}
   >
     Calendar View
   </button>
 </div>
 
-            <div className="bg-white border-l-8 border-emerald-800 rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10">
-                <h2 className="text-3xl font-extrabold tracking-wide uppercase text-gray-900 mb-6 border-b-4 border-emerald-800 inline-block pb-2 shadow-sm">
+              <div className={`bg-white border-l-8 ${teamColors?.text} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10`}>
+                <h2 className={`text-3xl font-extrabold tracking-wide uppercase text-gray-900 mb-6 border-b-4 ${teamColors?.text} inline-block pb-2 shadow-sm`}>
                   Games
                 </h2>
   
@@ -249,14 +265,14 @@ export default function TeamPage() {
   <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
     <button
       onClick={toggleModal}
-      className="bg-emerald-600 text-white px-6 py-3 rounded-md hover:bg-emerald-700 transition shadow-md"
+      className={`${teamColors?.bg} text-white px-6 py-3 rounded-md ${teamColors?.hoverBg} transition shadow-md`}
     >
       Add New Game
     </button>
 
     <button
       onClick={() => router.push(`/yearStats/${id}`)}
-      className="bg-emerald-500 text-white px-6 py-3 rounded-md hover:bg-emerald-600 transition shadow-md"
+      className={`${teamColors?.bg} text-white px-6 py-3 rounded-md ${teamColors?.hoverBg} transition shadow-md`}
     >
       View Year Stats
     </button>
@@ -277,19 +293,39 @@ export default function TeamPage() {
               <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
                 <div className="relative bg-white p-8 rounded-lg shadow-lg w-96 max-w-full">
                   <h3 className="text-2xl font-semibold text-gray-800 mb-6 text-center">Upload New Game</h3>
-                  <Dropbox teamId={id} />
+                  
+                  {/* dropbox or live stat */}
+                  
+                                  {hasHudl ? (
+                  <button
+                        onClick={toggleModal}
+                        className="..."
+                  >
+                        
+                        <Dropbox />
+                  </button>
+                    ) : (
+                  <button
+                    onClick={() => router.push(`/manualEntry/${id}`)}
+                    className={`mt-6 ${teamColors?.bg} text-white px-6 py-3 rounded-md ${teamColors?.hoverBg} w-full font-semibold`}
+                  >
+                    Enter Live Stats
+                  </button>
+                )}
+
+
                   <button
                     onClick={toggleModal}
                     className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-2xl"
                   >
                     ✖
                   </button>
-                  <button
+                  {/*<button
                     onClick={toggleModal}
-                    className="mt-6 bg-emerald-600 text-white px-6 py-3 rounded-md hover:bg-emerald-700 w-full font-semibold"
+                    className={`mt-6 ${teamColors?.bg} text-white px-6 py-3 rounded-md ${teamColors?.hoverBg} w-full font-semibold`}
                   >
                     Enter
-                  </button>
+                  </button>*/}
                 </div>
               </div>
             )}
@@ -328,13 +364,7 @@ export default function TeamPage() {
   
   
   function renderPlayersByPosition(position) {
-    const filtered = players.filter(player =>
-      games.some(game =>
-        game.stats?.some(stat =>
-          stat["Shirt number"] === player.jerseyNumber && stat.Position === position
-        )
-      )
-    );
+    const filtered = players.filter(player => player.position === position);
   
     if (filtered.length === 0) {
       return (
@@ -358,7 +388,7 @@ export default function TeamPage() {
                     Position: {position === 'F' ? 'Forward' : 'Defense'}
                   </p>
                 </div>
-                <span className="text-3xl font-impact text-emerald-800">
+                <span className={`text-3xl font-impact ${teamColors?.text}`}>
                   #{player.jerseyNumber}
                 </span>
               </div>
@@ -368,7 +398,7 @@ export default function TeamPage() {
       </div>
     );
   }
-
+  
 }
 
 
