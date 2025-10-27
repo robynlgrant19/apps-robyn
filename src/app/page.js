@@ -49,7 +49,7 @@ export default function Home() {
           <div className="sm:w-1/2 flex justify-center mb-8 sm:mb-0">
             <div className="bg-white p-4 rounded-2xl relative -translate-y-6 sm:-translate-y-6">
               <img
-                src="/hockeyfriends.webp"
+                src="/lobbypic.png"
                 alt="friends playing hockey"
                 className="w-96 sm:w-[460px] md:w-[520px] lg:w-[560px] h-auto object-contain"
               />
