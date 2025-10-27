@@ -28,7 +28,7 @@ export default function Home() {
             </h2>
 
             <p className="mt-5 text-gray-700 text-lg leading-relaxed max-w-md mx-auto sm:mx-0">
-              Track your games, stats, and team moments — all in one fun, friendly place.
+              Stay on top of every game with real-time stats, player insights, and performance tracking!
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-4 sm:justify-start justify-center">
@@ -47,11 +47,11 @@ export default function Home() {
 
           {/* Right side – Image */}
           <div className="sm:w-1/2 flex justify-center mb-8 sm:mb-0">
-            <div className="bg-white p-4 rounded-2xl">
+            <div className="bg-white p-4 rounded-2xl relative -translate-y-6 sm:-translate-y-6">
               <img
                 src="/hockeyfriends.webp"
                 alt="friends playing hockey"
-                className="w-80 sm:w-[400px] md:w-[460px] lg:w-[500px] h-auto object-contain"
+                className="w-96 sm:w-[460px] md:w-[520px] lg:w-[560px] h-auto object-contain"
               />
             </div>
           </div>
