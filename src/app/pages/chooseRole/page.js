@@ -37,22 +37,44 @@ export default function Role() {
               className="flex flex-col space-y-4"
             >
               <Link href="/pages/playerRegister">
-                <div className="bg-white border-2 border-emerald-500 p-6 rounded-lg shadow-lg hover:shadow-2xl hover:scale-105 transform transition-all">
-                  <h2 className="text-2xl font-semibold text-gray-800 mb-2 text-center">Player</h2>
-                  <p className="text-gray-600 text-center">
-                    I belong to an organized team as an active player. I want to see my individual progress and statistics.
-                  </p>
-                </div>
-              </Link>
+  <div className="bg-white border-2 border-emerald-500 p-6 rounded-lg shadow-lg hover:shadow-2xl hover:scale-105 transform transition-all flex items-center justify-between">
+    {/* Text Section */}
+    <div className="flex-1 pr-2 sm:pr-4">
+      <h2 className="text-2xl font-semibold text-gray-800 mb-2 text-center sm:text-left">Player</h2>
+      <p className="text-gray-600 text-center sm:text-left">
+        I belong to an organized team as an active player. I want to see my individual progress and statistics.
+      </p>
+    </div>
 
-              <Link href="/pages/coachRegister">
-                <div className="bg-white border-2 border-emerald-500 p-6 rounded-lg shadow-lg hover:shadow-2xl hover:scale-105 transform transition-all">
-                  <h2 className="text-2xl font-semibold text-gray-800 mb-2 text-center">Coach</h2>
-                  <p className="text-gray-600 text-center">
-                    I coach an organized team. I want to lead and guide my players in their growth and performance.
-                  </p>
-                </div>
-              </Link>
+    {/* Image Section */}
+    <img
+      src="/playerpic.png"
+      alt="Player character"
+      className="w-32 sm:w-36 h-40 object-contain ml-2 sm:ml-3"
+    />
+  </div>
+</Link>
+
+<Link href="/pages/coachRegister">
+  <div className="bg-white border-2 border-emerald-500 p-6 rounded-lg shadow-lg hover:shadow-2xl hover:scale-105 transform transition-all flex items-center justify-between">
+    {/* Image Section */}
+    <img
+      src="/coachpic.png"
+      alt="Coach character"
+      className="w-32 sm:w-36 h-40 object-contain mr-2 sm:mr-3 hidden sm:block"
+    />
+
+    {/* Text Section */}
+    <div className="flex-1 pl-2 sm:pl-4">
+      <h2 className="text-2xl font-semibold text-gray-800 mb-2 text-center sm:text-left">Coach</h2>
+      <p className="text-gray-600 text-center sm:text-left">
+        I coach an organized team. I want to lead and guide my players in their growth and performance.
+      </p>
+    </div>
+  </div>
+</Link>
+
+
             </motion.div>
           </div>
         </motion.div>
