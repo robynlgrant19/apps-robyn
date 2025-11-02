@@ -78,7 +78,6 @@ export default function TeamPage() {
         setHasHudl(team.hasHudl ?? true);
 
         if (team.players && team.players.length > 0) {
-  // 🧊 Case 1: team has an array of player IDs
   const playerPromises = team.players.map(async (playerId) => {
     const playerRef = doc(db, "players", playerId);
     const playerSnap = await getDoc(playerRef);
@@ -89,7 +88,6 @@ export default function TeamPage() {
   setPlayers(playersData);
   console.log("Fetched players (from team array):", id, playersData);
 } else {
-  // 🧩 Case 2: no players array → query Firestore for players with matching teamId
   const playersQuery = query(
     collection(db, "players"),
     where("teamId", "==", id)
@@ -304,6 +302,16 @@ export default function TeamPage() {
           <CalendarView games={games} />
         )}
       </div>
+      <div className="flex flex-col items-center gap-4 mb-12">
+
+        {/* Delete Button below */}
+        <button
+          onClick={toggleDeleteModal}
+          className="mt-2 text-red-600 text-sm hover:text-red-700 transition"
+        >
+          Delete Team
+        </button>
+      </div>
     </section>
   </>
 )}
@@ -336,19 +344,6 @@ export default function TeamPage() {
     </button>
   </div>
 )}
-
-  
-            {/* Action Buttons */}
-<div className="flex flex-col items-center gap-4 mb-12">
-
-  {/* Delete Button below */}
-  <button
-    onClick={toggleDeleteModal}
-    className="mt-2 text-red-600 text-sm hover:text-red-700 transition"
-  >
-    Delete Team
-  </button>
-</div>
 
   
             {/* Upload Game Modal */}
@@ -431,8 +426,8 @@ export default function TeamPage() {
     const filtered = players.filter(player => {
   if (!player.position) return false;
   const pos = player.position.toUpperCase();
-  if (position === 'F') return pos.startsWith('F'); // matches 'F' or 'Forward'
-  if (position === 'D') return pos.startsWith('D'); // matches 'D' or 'Defense'
+  if (position === 'F') return pos.startsWith('F'); 
+  if (position === 'D') return pos.startsWith('D'); 
   return false;
 });
 
