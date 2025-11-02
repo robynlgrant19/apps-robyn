@@ -122,7 +122,7 @@ useEffect(() => {
         let totalPowerPlayShots = 0;
         let totalShortHandedShots = 0;
         let totalPenaltiesDrawn = 0;
-        let totalPenaltyTime
+        let totalPenaltyTime = 0;
       
         const gameStats = [];
 
