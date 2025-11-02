@@ -46,7 +46,6 @@ export default function Home() {
           </div>
 
           {/* Right side – Image */}
-          {/* Right side – Image */}
         <div className="sm:w-1/2 flex justify-center mb-8 sm:mb-0">
           <div className="bg-white p-4 rounded-2xl relative -translate-y-6 sm:-translate-y-6 -ml-6 sm:-ml-10">
             <img
