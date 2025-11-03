@@ -101,11 +101,35 @@ export default function YearStats() {
     const fetchAllGameStats = async () => {
       if (!teamId) return;
 
-      
-
+    
       const gamesQuery = query(collection(db, 'games'), where('teamId', '==', teamId));
       const querySnapshot = await getDocs(gamesQuery);
-      const games = querySnapshot.docs.map(doc => doc.data());
+      const games = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      console.log("Games loaded for record test:", games);
+
+
+      
+      const recordGames = querySnapshot.docs.map(d => d.data());
+      let wins = 0, losses = 0, ties = 0;
+
+      recordGames.forEach(g => {
+        const teamScore = Number(g.teamScore);
+        const opponentScore = Number(g.opponentScore);
+        if (teamScore > opponentScore) wins++;
+        else if (teamScore < opponentScore) losses++;
+        else if (teamScore === opponentScore) ties++;
+      });
+
+//       recordGames.forEach(g => {
+//   console.log("Checking game:", g.teamScore, g.opponentScore, typeof g.teamScore);
+// });
+
+
+      // Save record to state
+      setTeamStats(prev => ({ ...prev, wins, losses, ties }));
+      
+
+
       const gameShotsData = games.map(game => {
         const totalShots = (game.stats || []).reduce((sum, stat) => {
           const shots = stat.Shots === '-' ? 0 : Number(stat.Shots || 0);
@@ -274,7 +298,10 @@ setPlusMinusChartData(filteredForPlusMinus);
       
 
 
-      setTeamStats(cumulativeStats);
+      setTeamStats(prev => ({
+        ...prev,
+        ...cumulativeStats,  // keep existing wins/losses/ties
+      }));
       setTeamFaceoffPercentage(faceoffPct);
       setTeamLeaders({ points: topPoints, goals: topGoals, assists: topAssists });
       setAverageShiftData(avgShiftData);
@@ -412,6 +439,14 @@ setPlusMinusChartData(filteredForPlusMinus);
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
             <div className="bg-white rounded-2xl shadow-md p-6 space-y-4 border border-gray-200">
         <h2 className="text-xl font-semibold text-gray-800">Cumulative Stats</h2>
+        <div className="flex justify-between border-b pb-2">
+        <span className="text-gray-600 font-medium">Record</span>
+        <span className={`font-semibold ${teamColors.text}`}>
+          {teamStats.wins ?? 0}-{teamStats.losses ?? 0}-{teamStats.ties ?? 0}
+        </span>
+      </div>
+
+
         <div className="space-y-3">
           <div className="flex justify-between border-b pb-2">
             <span className="text-gray-600 font-medium">Points</span>

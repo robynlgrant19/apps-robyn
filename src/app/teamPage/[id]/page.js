@@ -78,25 +78,25 @@ export default function TeamPage() {
         setHasHudl(team.hasHudl ?? true);
 
         if (team.players && team.players.length > 0) {
-  const playerPromises = team.players.map(async (playerId) => {
-    const playerRef = doc(db, "players", playerId);
-    const playerSnap = await getDoc(playerRef);
-    return playerSnap.exists() ? { id: playerSnap.id, ...playerSnap.data() } : null;
-  });
+          const playerPromises = team.players.map(async (playerId) => {
+            const playerRef = doc(db, "players", playerId);
+            const playerSnap = await getDoc(playerRef);
+            return playerSnap.exists() ? { id: playerSnap.id, ...playerSnap.data() } : null;
+          });
 
-  const playersData = (await Promise.all(playerPromises)).filter(p => p !== null);
-  setPlayers(playersData);
-  console.log("Fetched players (from team array):", id, playersData);
-} else {
-  const playersQuery = query(
-    collection(db, "players"),
-    where("teamId", "==", id)
-  );
-  const playersSnap = await getDocs(playersQuery);
-  const playersData = playersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  setPlayers(playersData);
-  console.log("Fetched players (by teamId):", id, playersData);
-}
+        const playersData = (await Promise.all(playerPromises)).filter(p => p !== null);
+        setPlayers(playersData);
+        console.log("Fetched players (from team array):", id, playersData);
+      } else {
+        const playersQuery = query(
+          collection(db, "players"),
+          where("teamId", "==", id)
+        );
+        const playersSnap = await getDocs(playersQuery);
+        const playersData = playersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setPlayers(playersData);
+        console.log("Fetched players (by teamId):", id, playersData);
+      }
 
 
 
@@ -107,6 +107,11 @@ export default function TeamPage() {
         const querySnapshot = await getDocs(gamesQuery);
         const gamesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setGames(gamesData);
+
+        const wins = gamesData.filter(g=>g.teamScore > g.opponentScore).length;
+        const losses = gamesData.filter(g=>g.teamScore < g.opponentScore).length;
+        const ties = gamesData.filter(g=>g.teamScore === g.opponentScore).length;
+        setTeamData({...team, record: { wins, losses, ties }});
       }
 
       setTimeout(() => {
@@ -179,15 +184,35 @@ export default function TeamPage() {
 
 
           <>
-            {/* Team Header */}
-            <div className={`bg-white border-l-8 ${teamColors?.text} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10`}>
-              <h1 className="text-3xl  font-extrabold text-gray-900 tracking-wide">
-                {teamData.gender}'s {teamData.sport} - {teamData.school}
-              </h1>
-              <p className="text-lg sm:text-xl text-gray-700 mt-3 font-medium">
-                Team Code: <span className={`${teamColors?.text} font-semibold`}>{teamData.teamCode}</span>
-              </p>
-            </div>
+           {/* Team Header */}
+<div
+  className={`relative bg-white border-l-8 ${teamColors?.text} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10`}
+>
+  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end">
+    <div>
+      <h1 className="text-3xl font-extrabold text-gray-900">
+        {teamData.gender}'s {teamData.sport} - {teamData.school}
+      </h1>
+      <p className="text-lg sm:text-xl text-gray-700 mt-2 font-medium">
+        Team Code:{" "}
+        <span className={`${teamColors?.text} font-semibold`}>
+          {teamData.teamCode}
+        </span>
+      </p>
+    </div>
+
+    {teamData.record && (
+      <div className="mt-4 sm:mt-0 text-right">
+        <p className="text-4xl font-impact tracking-wide text-gray-900 leading-tight">
+          <span className={`${teamColors?.text}`}>
+            {teamData.record.wins}-{teamData.record.losses}-{teamData.record.ties}
+          </span>
+        </p>
+      </div>
+    )}
+  </div>
+</div>
+
 
            {/* Top Menu Bar */}
 <div className="flex justify-center space-x-10 border-b border-gray-200 mb-10">
