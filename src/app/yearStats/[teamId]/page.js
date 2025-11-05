@@ -120,11 +120,6 @@ export default function YearStats() {
         else if (teamScore === opponentScore) ties++;
       });
 
-//       recordGames.forEach(g => {
-//   console.log("Checking game:", g.teamScore, g.opponentScore, typeof g.teamScore);
-// });
-
-
       // Save record to state
       setTeamStats(prev => ({ ...prev, wins, losses, ties }));
       

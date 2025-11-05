@@ -5,6 +5,7 @@ import { auth, db } from "../../firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { setDoc, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function PlayerSignUp() {
   const [firstName, setFirstName] = useState("");
@@ -14,39 +15,42 @@ export default function PlayerSignUp() {
   const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
 
-  const handleSignUp = async (e) => {
-    e.preventDefault();
-    setErrorMessage("");
+const handleSignUp = async (e) => {
+  e.preventDefault();
+  setErrorMessage("");
 
-    try {
-      // Create user in Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+  try {
 
-      // Create player doc in Firestore
-      await setDoc(doc(db, "players", user.uid), {
-        firstName,
-        lastName,
-        email,
-        uid: user.uid,
-        role: "player",
-        createdAt: new Date(),
-      });
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-      console.log("✅ Player document created successfully!");
-      router.push("/homePlayer"); // Optional redirect after sign-up
 
-    } catch (error) {
-      console.error("❌ Signup error:", error);
-      if (error.code === "auth/email-already-in-use") {
-        setErrorMessage("This email is already in use");
-      } else if (error.code === "auth/invalid-email") {
-        setErrorMessage("Invalid email format. Please enter a valid email.");
-      } else {
-        setErrorMessage("Failed to sign up. Please try again.");
+    await setDoc(doc(db, "players", user.uid), {
+      firstName,
+      lastName,
+      email,
+      uid: user.uid,
+      role: "player",
+      createdAt: new Date(),
+    });
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        router.push("/homePlayer"); 
+        unsubscribe(); // stop listening
       }
+    });
+
+  } catch (error) {
+    if (error.code === "auth/email-already-in-use") {
+      setErrorMessage("This email is already in use");
+    } else if (error.code === "auth/invalid-email") {
+      setErrorMessage("Invalid email format. Please enter a valid email.");
+    } else {
+      setErrorMessage("Failed to sign up. Please try again.");
     }
-  };
+  }
+};
+
 
   return (
     <div className="max-w-md mx-auto bg-white p-8 rounded-lg">

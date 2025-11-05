@@ -28,6 +28,10 @@ export default function TeamPage() {
   const [teamColors, setTeamColors] = useState(null);
   const [hasHudl, setHasHudl] = useState(true);
   const [activeTab, setActiveTab] = useState("home");
+  const playerImages = {
+  "Robyn Grant": "/playerPhotos/robyngrant.jpg",
+  };
+  const defaultPhoto = "/defaultProfile.png";
 
 
   
@@ -444,6 +448,8 @@ export default function TeamPage() {
       </div>
     </div>
   );
+
+  
   
   
   function renderPlayersByPosition(position) {
@@ -467,28 +473,59 @@ export default function TeamPage() {
     }
   
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {filtered.map(player => (
-          <Link key={player.id} href={`/playerProfile/${id}/${player.id}`}>
-            <div className="bg-gray-50 p-5 rounded-xl shadow hover:shadow-lg transition cursor-pointer">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    {player.firstName} {player.lastName}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Position: {position === 'F' ? 'Forward' : 'Defense'}
-                  </p>
-                </div>
-                <span className={`text-3xl font-impact ${teamColors?.text}`}>
-                  #{player.jerseyNumber}
-                </span>
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 p-4">
+    {filtered.map((player) => {
+      // build name and check if it’s in the manual map
+      const fullName = `${player.firstName} ${player.lastName}`;
+      const defaultPhoto = "/playerPhotos/defaultProfile.png";
+      const manualPhoto = playerImages[fullName]; // e.g. “Robyn Grant”: “/playerPhotos/robyngrant.jpg”
+
+      // if no manual photo, try the auto-generated file (e.g. /playerPhotos/robyngrant.jpg)
+      const fallbackPhoto = `/playerPhotos/${player.firstName}${player.lastName}`.toLowerCase() + ".jpg";
+
+      // prioritize manual → fallback → default
+      const imagePath = manualPhoto || fallbackPhoto;
+
+      return (
+        <Link key={player.id} href={`/playerProfile/${id}/${player.id}`}>
+          <div className="group bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden border border-gray-200 hover:border-emerald-400">
+            <div className="relative">
+              {/* Player Photo */}
+              <img
+                src={imagePath}
+                alt={`${player.firstName} ${player.lastName}`}
+                onError={(e) => {
+                  // if local image not found, fallback to default
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = defaultPhoto;
+                }}
+                className="w-full h-56 object-cover transition-transform duration-300 group-hover:scale-105 bg-gray-100"
+              />
+
+              {/* Jersey Number Overlay */}
+              <div className="absolute bottom-3 right-3 bg-emerald-600 text-white text-sm font-bold px-3 py-1 rounded-full shadow-md">
+                #{player.jerseyNumber}
               </div>
             </div>
-          </Link>
-        ))}
-      </div>
-    );
+
+            {/* Player Info */}
+            <div className="p-4 text-center">
+              <h3 className="text-lg font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors">
+                {player.firstName} {player.lastName}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {position === "F" ? "Forward" : "Defense"}
+              </p>
+            </div>
+          </div>
+        </Link>
+      );
+    })}
+  </div>
+);
+
+
+
   }
   
 }
