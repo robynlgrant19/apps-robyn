@@ -18,6 +18,7 @@ ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, 
 
 export default function TeamPage() {
   const { id } = useParams();
+  console.log("TeamPage id:", id);
   const [teamData, setTeamData] = useState(null);
   const [players, setPlayers] = useState([]);
   const [games, setGames] = useState([]);
@@ -32,6 +33,8 @@ export default function TeamPage() {
   "Robyn Grant": "/playerPhotos/robyngrant.jpg",
   };
   const defaultPhoto = "/defaultProfile.png";
+  const [showToast, setShowToast] = useState(false);
+
 
 
   
@@ -53,6 +56,31 @@ export default function TeamPage() {
     'Backchecking hard...',
     'Blocking a shot...'
   ];
+
+  const refreshGames = async () => {
+  if (!id) return;
+
+  const gamesQuery = query(collection(db, "games"), where("teamId", "==", id));
+  const querySnapshot = await getDocs(gamesQuery);
+  const gamesData = querySnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+
+  setGames(gamesData);
+
+  // Optionally recompute record (wins/losses/ties)
+  const wins = gamesData.filter((g) => g.teamScore > g.opponentScore).length;
+  const losses = gamesData.filter((g) => g.teamScore < g.opponentScore).length;
+  const ties = gamesData.filter((g) => g.teamScore === g.opponentScore).length;
+  setTeamData((prev) => ({
+    ...prev,
+    record: { wins, losses, ties },
+  }));
+
+  console.log("✅ Games refreshed after upload:", gamesData);
+};
+
   
 
   
@@ -168,6 +196,15 @@ export default function TeamPage() {
     
   </div>
 </nav>
+
+{showToast && (
+  <div className="fixed top-20 z-50 flex justify-center w-full">
+    <div className="bg-emerald-600 text-white font-semibold px-6 py-3 rounded-lg shadow-lg animate-fade-in-down">
+      ✅ Game added successfully!
+    </div>
+  </div>
+)}
+
       
       <div className="max-w-6xl mx-auto mt-40">
   
@@ -455,7 +492,16 @@ export default function TeamPage() {
   <div className="bg-white rounded-xl shadow-lg ring-1 ring-gray-200 p-8 text-center">
     <h2 className="text-2xl font-bold text-gray-900 mb-4">Upload or Enter Game Stats</h2>
     {hasHudl ? (
-      <Dropbox />
+      <Dropbox
+  teamId={teamData?.id || id}
+  onGameUploaded={() => {
+    refreshGames();
+    setShowToast(true);      // ✅ show toast
+    setTimeout(() => setShowToast(false), 3000);
+    setActiveTab("home");    // optional — switch back to home
+  }}
+/>
+
     ) : (
       <button
         onClick={() => router.push(`/manualEntry/${id}`)}
@@ -466,6 +512,7 @@ export default function TeamPage() {
     )}
   </div>
 )}
+
 
 {activeTab === "yearOverview" && (
   <div className="bg-white rounded-xl shadow-lg ring-1 ring-gray-200 p-8 text-center">
@@ -483,45 +530,47 @@ export default function TeamPage() {
   
             {/* Upload Game Modal */}
             {isModalOpen && (
-              <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-                <div className="relative bg-white p-8 rounded-lg shadow-lg w-96 max-w-full">
-                  <h3 className="text-2xl font-semibold text-gray-800 mb-6 text-center">Upload New Game</h3>
-                  
-                  {/* dropbox or live stat */}
-                  
-                                  {hasHudl ? (
-                  <button
-                        onClick={toggleModal}
-                        className="..."
-                  >
-                        
-                        <Dropbox />
-                  </button>
-                    ) : (
-                  <button
-                    onClick={() => router.push(`/manualEntry/${id}`)}
-                    className={`mt-6 ${teamColors?.bg} text-white px-6 py-3 rounded-md ${teamColors?.hoverBg} w-full font-semibold`}
-                  >
-                    Enter Live Stats
-                  </button>
-                )}
+  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+    <div className="relative bg-white p-8 rounded-lg shadow-lg w-96 max-w-full">
+      <h3 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
+        Upload New Game
+      </h3>
+
+      {/* ✅ Upload Form */}
+      {hasHudl ? (
+        <Dropbox
+  teamId={teamData?.id || id}
+  onGameUploaded={() => {
+    refreshGames();
+    setShowToast(true);      // ✅ show toast
+    setIsModalOpen(false);   // close modal
+    setTimeout(() => setShowToast(false), 3000); // hide toast after 3s
+  }}
+/>
 
 
-                  <button
-                    onClick={toggleModal}
-                    className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-2xl"
-                  >
-                    ✖
-                  </button>
-                  {/*<button
-                    onClick={toggleModal}
-                    className={`mt-6 ${teamColors?.bg} text-white px-6 py-3 rounded-md ${teamColors?.hoverBg} w-full font-semibold`}
-                  >
-                    Enter
-                  </button>*/}
-                </div>
-              </div>
-            )}
+
+
+      ) : (
+        <button
+          onClick={() => router.push(`/manualEntry/${id}`)}
+          className={`mt-6 ${teamColors?.bg} text-white px-6 py-3 rounded-md ${teamColors?.hoverBg} w-full font-semibold`}
+        >
+          Enter Live Stats
+        </button>
+      )}
+
+      {/* Close Button */}
+      <button
+        onClick={toggleModal}
+        className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 text-2xl"
+      >
+        ✖
+      </button>
+    </div>
+  </div>
+)}
+
   
             {/* Delete Modal */}
             {isDeleteModalOpen && (
