@@ -35,7 +35,7 @@ const handleSignUp = async (e) => {
     });
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
-        router.push("/homePlayer"); 
+        router.push("/pages/homePlayer");
         unsubscribe(); // stop listening
       }
     });

@@ -599,17 +599,34 @@ return (
 <div className="max-w-5xl mx-auto mt-20">
 {gameInfo && (
   <div className="bg-white border-l-8 border-emerald-800 rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10">
-    <div className="flex justify-between items-center mb-2">
-      <h2 className="text-2xl font-bold text-gray-900">
-        {gameInfo.location === 'Away' ? '@' : 'vs'} {gameInfo.opponent}
-      </h2>
-      <p className="text-3xl font-impact text-emerald-800">
+    <div className="flex items-center justify-between mb-2">
+      {/* LEFT: Opponent Logo + Name */}
+      <div className="flex items-center gap-4">
+        
+
+        {/* Opponent Info */}
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          {gameInfo.location === 'Away' ? '@' : 'vs'} {gameInfo.opponent}
+        </h2>
+        <img
+          src={`/teamLogos/${gameInfo.opponent?.toLowerCase().replace(/\s+/g, '')}.jpg`}
+          alt={`${gameInfo.opponent} logo`}
+          onError={(e) => (e.currentTarget.src = '/teamLogos/default.jpg')}
+          className="w-14 h-14 sm:w-16 sm:h-16 object-contain"
+        />
+      </div>
+
+      {/* RIGHT: Score */}
+      <p className="text-3xl sm:text-4xl font-impact text-emerald-800">
         {gameInfo.teamScore} - {gameInfo.opponentScore}
       </p>
     </div>
-    {/*<p className="text-gray-600 text-md">{gameInfo.gameDate}</p>*/}
+
+    {/* Optional: Game Date (uncomment if desired) */}
+    {/* <p className="text-gray-600 text-md mt-2">{gameInfo.gameDate}</p> */}
   </div>
 )}
+
 {/*
 <div className="flex justify-end mb-4">
   <button

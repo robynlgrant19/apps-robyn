@@ -22,7 +22,7 @@ export default function PlayerHome() {
   "Robyn Grant": "/playerPhotos/robyngrant.jpg",
   "Maci Peller": "/playerPhotos/macipeller.JPG",
   "Jamie Steinmetz": "/playerPhotos/jamiesteinmetz.JPG",
-  "Jacque Martin": "/playerPhotos/jacquemartin.JPG",
+  "Jacqueline Martin": "/playerPhotos/jacquelinemartin.JPG",
   "Laura Castronova": "/playerPhotos/lauracastronova.JPG",
   "Emma Lemery": "/playerPhotos/emmalemery.JPG", 
   "Gracie Menicci": "/playerPhotos/graciemenicci.JPG", 
