@@ -142,10 +142,10 @@ export default function Dropbox({ teamId: propTeamId, onGameUploaded }) {
   <option value="" disabled>-- Select Opponent --</option>
   <option value="Keene State">Keene State</option>
   <option value="Salem State">Salem State</option>
-  <option value="NEC">NEC</option>
+  <option value="New England College">New England College</option>
   <option value="UMass Boston">UMass Boston</option>
   <option value="Castleton">Castleton</option>
-  <option value="USM">USM</option>
+  <option value="Southern Maine">Southern Maine</option>
   <option value="Norwich">Norwich</option>
   <option value="Salve Regina">Salve Regina</option>
   <option value="Curry College">Curry College</option>
