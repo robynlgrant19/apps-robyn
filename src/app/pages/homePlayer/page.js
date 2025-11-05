@@ -20,6 +20,7 @@ export default function PlayerHome() {
   const [position, setPosition] = useState("");
   const playerImages = {
   "Robyn Grant": "/playerPhotos/robyngrant.jpg",
+  "Maci Peller": "/playerPhotos/macipeller.JPG",
   };
 
 

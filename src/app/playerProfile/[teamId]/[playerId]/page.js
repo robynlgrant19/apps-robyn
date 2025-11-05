@@ -48,6 +48,7 @@ export default function PlayerProfile() {
   const [loadingMessage, setLoadingMessage] = useState('');
   const playerImages = {
   "Robyn Grant": "/playerPhotos/robyngrant.jpg",
+  "Maci Peller": "/playerPhotos/macipeller.JPG"
 };
 
 useEffect(() => {
@@ -528,7 +529,7 @@ const defaultPhoto = "/playerPhotos/defaultProfile.png";
 const manualPhoto = playerImages?.[fullName];
 
 // try automatically generated file name, e.g. /playerPhotos/robyngrant.jpg
-const fallbackPhoto = `/playerPhotos/${player.firstName}${player.lastName}`.toLowerCase() + ".jpg";
+const fallbackPhoto = `/playerPhotos/${player.firstName}${player.lastName}`.toLowerCase() + ".JPG";
 
 // prioritize manual → fallback → default
 const imagePath = manualPhoto || fallbackPhoto || defaultPhoto;

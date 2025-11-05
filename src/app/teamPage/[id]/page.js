@@ -31,6 +31,7 @@ export default function TeamPage() {
   const [activeTab, setActiveTab] = useState("home");
   const playerImages = {
   "Robyn Grant": "/playerPhotos/robyngrant.jpg",
+  "Maci Peller": "/playerPhotos/macipeller.JPG",
   };
   const defaultPhoto = "/defaultProfile.png";
   const [showToast, setShowToast] = useState(false);
