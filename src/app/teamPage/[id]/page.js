@@ -32,6 +32,14 @@ export default function TeamPage() {
   const playerImages = {
   "Robyn Grant": "/playerPhotos/robyngrant.jpg",
   "Maci Peller": "/playerPhotos/macipeller.JPG",
+  "Jamie Steinmetz": "/playerPhotos/jamiesteinmetz.JPG",
+  "Jacque Martin": "/playerPhotos/jacquemartin.JPG",
+  "Laura Castronova": "/playerPhotos/lauracastronova.JPG",
+  "Emma Lemery": "/playerPhotos/emmalemery.JPG", 
+  "Gracie Menicci": "/playerPhotos/graciemenicci.JPG", 
+  "Emily Gerrie": "/playerPhotos/emilygerrie.JPG", 
+  "Katie Porrello": "/playerPhotos/katieporrello.JPG", 
+
   };
   const defaultPhoto = "/defaultProfile.png";
   const [showToast, setShowToast] = useState(false);
