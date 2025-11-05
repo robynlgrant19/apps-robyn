@@ -70,6 +70,8 @@ export default function YearStats() {
   ];
   const [loadingMessage, setLoadingMessage] = useState('');
   const [teamColors, setTeamColors] = useState(null);
+  const [teamSchool, setTeamSchool] = useState("");
+
 
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * hockeySayings.length);
@@ -77,21 +79,23 @@ export default function YearStats() {
   }, []);
 
   useEffect(() => {
-    const fetchTeamColors = async () => {
-      if (!teamId) return;
-  
-      const teamRef = doc(db, 'teams', teamId);
-      const teamSnap = await getDoc(teamRef);
-  
-      if (teamSnap.exists()) {
-        const team = teamSnap.data();
-        const school = team.school?.trim();
-        setTeamColors(teamColorClasses[school] || {});
-      }
-    };
-  
-    fetchTeamColors();
-  }, [teamId]);
+  const fetchTeamColors = async () => {
+    if (!teamId) return;
+
+    const teamRef = doc(db, 'teams', teamId);
+    const teamSnap = await getDoc(teamRef);
+
+    if (teamSnap.exists()) {
+      const team = teamSnap.data();
+      const school = team.school?.trim();
+      setTeamColors(teamColorClasses[school] || {});
+      setTeamSchool(school || ""); 
+    }
+  };
+
+  fetchTeamColors();
+}, [teamId]);
+
   
 
   
@@ -427,10 +431,24 @@ setPlusMinusChartData(filteredForPlusMinus);
   </div>
 </nav>
 <div className="max-w-5xl mx-auto mt-20">
-<div className={`bg-white border-l-8 ${teamColors.border} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10 mt-20`}>
-<h2 className="text-3xl font-semibold">Season Stats</h2>
-             
-            </div>
+
+<div
+  className={`bg-white border-l-8 ${teamColors.border} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10 mt-20 flex items-center justify-between`}
+>
+  <h2 className="text-3xl font-semibold text-gray-900">Season Stats</h2>
+
+  {teamSchool && (
+  <img
+    src={`/teamLogos/${teamSchool.toLowerCase().replace(/\s+/g, '')}.jpg`}
+    alt={`${teamSchool} logo`}
+    onError={(e) => (e.currentTarget.src = "/teamLogos/default.jpg")}
+    className="w-16 h-16 sm:w-20 sm:h-20 object-contain ml-4"
+  />
+)}
+
+</div>
+
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
             <div className="bg-white rounded-2xl shadow-md p-6 space-y-4 border border-gray-200">
         <h2 className="text-xl font-semibold text-gray-800">Cumulative Stats</h2>
