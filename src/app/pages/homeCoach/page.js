@@ -132,25 +132,38 @@ export default function CoachHome() {
         </div>
 
         <div className="max-w-4xl w-full bg-white shadow-lg rounded-xl p-8 my-8 mx-auto">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Your Teams</h2>
-          {teams.length > 0 ? (
-            <ul className="space-y-4">
-              {teams.map((team) => (
-                <Link key={team.id} href={`/teamPage/${team.id}`} passHref>
-                  <li className="bg-gray-100 p-6 rounded-lg shadow-md hover:bg-gray-200 transition-all cursor-pointer">
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      {team.gender}'s {team.sport}
-                    </h3>
-                    <p className="text-gray-600">{team.school}</p>
-                    <p className="text-gray-500">Team Code: {team.teamCode}</p>
-                  </li>
-                </Link>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500">You haven't created any teams yet.</p>
-          )}
-        </div>
+  <h2 className="text-2xl font-semibold text-gray-800 mb-6">Your Teams</h2>
+
+  {teams.length > 0 ? (
+    <ul className="space-y-4">
+      {teams.map((team) => (
+        <Link key={team.id} href={`/teamPage/${team.id}`} passHref>
+          <li className="bg-white p-6 rounded-lg shadow-md hover:bg-gray-200 transition-all cursor-pointer flex justify-between items-center">
+            {/* LEFT: Team Info */}
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900">
+                {team.gender}'s {team.sport}
+              </h3>
+              <p className="text-gray-600">{team.school}</p>
+              <p className="text-gray-500">Team Code: {team.teamCode}</p>
+            </div>
+
+            {/* RIGHT: Team Logo */}
+            <img
+              src={`/teamLogos/${team.school.toLowerCase().replace(/\s+/g, '')}.svg`}
+              alt={`${team.school} logo`}
+              className="w-16 h-16 sm:w-20 sm:h-20 object-contain ml-4"
+              onError={(e) => (e.currentTarget.src = '/teamLogos/default.png')}
+            />
+          </li>
+        </Link>
+      ))}
+    </ul>
+  ) : (
+    <p className="text-gray-500">You haven't created any teams yet.</p>
+  )}
+</div>
+
 
         {coachData?.approved && (
           <div className="flex flex-col items-center w-full mt-8 space-y-4">

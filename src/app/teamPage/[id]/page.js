@@ -192,29 +192,47 @@ export default function TeamPage() {
 <div
   className={`relative bg-white border-l-8 ${teamColors?.text} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10`}
 >
-  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end">
-    <div>
-      <h1 className="text-3xl font-extrabold text-gray-900">
-        {teamData.gender}'s {teamData.sport} - {teamData.school}
+  <div className="flex flex-col sm:flex-row justify-between items-center w-full px-4 sm:px-8 py-4 sm:py-6">
+  {/* LEFT: Logo + Team Info */}
+  <div className="flex items-center gap-6 sm:gap-8">
+    {/* --- TEAM LOGO --- */}
+    <img
+      src={`/teamLogos/${teamData.school.toLowerCase().replace(/\s+/g, '')}.jpg`}
+      alt={`${teamData.school} logo`}
+      className="w-28 h-28 sm:w-32 sm:h-32 object-contain"
+      onError={(e) => (e.currentTarget.src = '/teamLogos/default.jpg')}
+    />
+
+    {/* --- TEAM NAME + CODE --- */}
+    <div className="flex flex-col justify-center">
+      <h1 className="text-4xl font-extrabold text-gray-900 leading-snug">
+        {teamData.gender}'s {teamData.sport}
       </h1>
+      <h2 className="text-3xl font-bold text-gray-800 leading-snug">
+        {teamData.school}
+      </h2>
       <p className="text-lg sm:text-xl text-gray-700 mt-2 font-medium">
-        Team Code:{" "}
+        Team Code:{' '}
         <span className={`${teamColors?.text} font-semibold`}>
           {teamData.teamCode}
         </span>
       </p>
     </div>
-
-    {teamData.record && (
-      <div className="mt-4 sm:mt-0 text-right">
-        <p className="text-4xl font-impact tracking-wide text-gray-900 leading-tight">
-          <span className={`${teamColors?.text}`}>
-            {teamData.record.wins}-{teamData.record.losses}-{teamData.record.ties}
-          </span>
-        </p>
-      </div>
-    )}
   </div>
+
+  {/* RIGHT: Record */}
+  {teamData.record && (
+    <div className="mt-4 sm:mt-0 text-center sm:text-right">
+      <p className="text-5xl sm:text-6xl font-impact tracking-wide text-gray-900 leading-tight">
+        <span className={`${teamColors?.text}`}>
+          {teamData.record.wins}-{teamData.record.losses}-{teamData.record.ties}
+        </span>
+      </p>
+    </div>
+  )}
+</div>
+
+
 </div>
 
 
@@ -273,75 +291,163 @@ export default function TeamPage() {
 
     {/* Games Section */}
     <section className="mb-12">
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={() => setViewMode('list')}
-          className={`px-4 py-2 rounded-l-md ${
-            viewMode === 'list' ? `${teamColors?.bg} text-white` : 'bg-gray-200 text-gray-700'
-          } ${teamColors?.hoverBg} transition`}
-        >
-          List View
-        </button>
-        <button
-          onClick={() => setViewMode('calendar')}
-          className={`px-4 py-2 rounded-r-md ${
-            viewMode === 'calendar' ? `${teamColors?.bg} text-white` : 'bg-gray-200 text-gray-700'
-          } ${teamColors?.hoverBg} transition`}
-        >
-          Calendar View
-        </button>
-      </div>
+  {/* View Mode Buttons */}
+  <div className="flex justify-end mb-4">
+    <button
+      onClick={() => setViewMode("list")}
+      className={`px-4 py-2 rounded-l-md ${
+        viewMode === "list"
+          ? `${teamColors?.bg} text-white`
+          : "bg-gray-200 text-gray-700"
+      } ${teamColors?.hoverBg} transition`}
+    >
+      List View
+    </button>
+    <button
+      onClick={() => setViewMode("calendar")}
+      className={`px-4 py-2 rounded-r-md ${
+        viewMode === "calendar"
+          ? `${teamColors?.bg} text-white`
+          : "bg-gray-200 text-gray-700"
+      } ${teamColors?.hoverBg} transition`}
+    >
+      Calendar View
+    </button>
+  </div>
 
-      <div className={`bg-white border-l-8 ${teamColors?.text} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10`}>
-        <h2 className={`text-3xl font-extrabold tracking-wide uppercase text-gray-900 mb-6 border-b-4 ${teamColors?.border} inline-block pb-2 shadow-sm`}>
-          Games
-        </h2>
+  {/* Games Section */}
+  <div
+    className={`bg-white border-l-8 ${teamColors?.text} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10`}
+  >
+    <h2
+      className={`text-3xl font-extrabold tracking-wide uppercase text-gray-900 mb-6 border-b-4 ${teamColors?.border} inline-block pb-2 shadow-sm`}
+    >
+      Games
+    </h2>
 
-        {viewMode === 'list' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {games
-              .sort((a, b) => new Date(b.gameDate) - new Date(a.gameDate))
-              .map((game) => {
+    {viewMode === "list" ? (
+      (() => {
+        // Group games by month/year
+        const sortedGames = [...games].sort(
+          (a, b) => new Date(a.gameDate) - new Date(b.gameDate)
+        );
+        const grouped = sortedGames.reduce((acc, game) => {
+          const date = new Date(game.gameDate);
+          const monthYear = date.toLocaleString("default", {
+            month: "long",
+            year: "numeric",
+          });
+          if (!acc[monthYear]) acc[monthYear] = [];
+          acc[monthYear].push(game);
+          return acc;
+        }, {});
+
+        return Object.entries(grouped).map(([month, monthGames]) => (
+          <div key={month} className="mb-10">
+            {/* --- Month Title --- */}
+            <h3 className="text-2xl font-bold text-gray-800 mb-4 border-b border-gray-300 pb-1">
+              {month}
+            </h3>
+
+            <div className="space-y-4">
+              {monthGames.map((game) => {
                 const isWin = game.teamScore > game.opponentScore;
                 const isLoss = game.teamScore < game.opponentScore;
-                const resultClass = isWin
-                  ? 'text-emerald-800'
+                const isTie = game.teamScore === game.opponentScore;
+
+                const resultColor = isWin
+                  ? "text-emerald-700"
                   : isLoss
-                  ? 'text-red-500'
-                  : 'text-gray-500';
+                  ? "text-red-600"
+                  : "text-gray-600";
+
+                const resultLabel = isWin ? "W," : isLoss ? "L," : "T,";
+
+                const logoPath = `/teamLogos/${game.opponent
+                  ?.toLowerCase()
+                  .replace(/\s+/g, "")}.jpg`;
 
                 return (
                   <Link key={game.id} href={`/gameProfiles/${game.id}`}>
-                    <div className="bg-gray-50 p-5 rounded-xl shadow hover:shadow-lg transition cursor-pointer">
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-lg font-semibold text-gray-800">
-                          {game.location === 'Away' ? '@' : 'vs'} {game.opponent}
-                        </h3>
-                        <span className={`text-xl font-impact ${resultClass}`}>
-                          {game.teamScore} - {game.opponentScore}
-                        </span>
+                    <div className="bg-white flex items-center justify-between rounded-xl shadow-sm border border-gray-200 p-4 transition hover:shadow-md hover:bg-gray-100 cursor-pointer">
+                      {/* LEFT: Opponent Logo + Date */}
+                      <div className="flex items-center w-1/3">
+                        <img
+                          src={logoPath}
+                          alt={`${game.opponent} logo`}
+                          onError={(e) =>
+                            (e.currentTarget.src = "/teamLogos/default.jpg")
+                          }
+                          className="w-12 h-12 sm:w-14 sm:h-14 object-contain mr-3"
+                        />
+                        <div>
+                          <p className="text-sm text-gray-500">
+                            {new Date(
+                              game.gameDate
+                            ).toLocaleDateString("en-US", {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {new Date(game.gameDate).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600">{game.gameDate}</p>
+
+                      {/* CENTER: Opponent Info */}
+                      <div className="flex-1 text-center">
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          {game.location === "Away" ? "@" : "vs"}{" "}
+                          {game.opponent}
+                        </h3>
+                      </div>
+
+                      {/* RIGHT: Result */}
+                      <div className="text-right w-1/4">
+                        <p
+                          className={`font-impact text-lg sm:text-xl ${resultColor}`}
+                        >
+                          <span className="font-bold mr-1">{resultLabel}</span>
+                          {game.teamScore}-{game.opponentScore}
+                        </p>
+                      </div>
                     </div>
                   </Link>
                 );
               })}
+            </div>
           </div>
-        ) : (
-          <CalendarView games={games} />
-        )}
-      </div>
-      <div className="flex flex-col items-center gap-4 mb-12">
+        ));
+      })()
+    ) : (
+      <CalendarView games={games} />
+    )}
+  </div>
 
-        {/* Delete Button below */}
-        <button
-          onClick={toggleDeleteModal}
-          className="mt-2 text-red-600 text-sm hover:text-red-700 transition"
-        >
-          Delete Team
-        </button>
-      </div>
-    </section>
+  {/* Delete Button */}
+  <div className="flex flex-col items-center gap-4 mb-12">
+    <button
+      onClick={toggleDeleteModal}
+      className="mt-2 text-red-600 text-sm hover:text-red-700 transition"
+    >
+      Delete Team
+    </button>
+  </div>
+</section>
+
+
+
+
+
+
+
+
+
   </>
 )}
 

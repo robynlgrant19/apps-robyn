@@ -18,6 +18,10 @@ export default function PlayerHome() {
   const [user, setUser] = useState(null);
   const [jerseyNumber, setJerseyNumber] = useState("");
   const [position, setPosition] = useState("");
+  const playerImages = {
+  "Robyn Grant": "/playerPhotos/robyngrant.jpg",
+  };
+
 
  const fetchPlayerData = async (user) => {
   if (!user) return;
@@ -144,25 +148,55 @@ export default function PlayerHome() {
 
       <div className="flex-grow pt-20 w-full">
         {/* Profile Section */}
-        <div className="max-w-4xl w-full bg-white shadow-lg rounded-xl p-8 my-8 mx-auto">
-          {loading ? (
-            <div className="text-center text-gray-500">Loading player data...</div>
-          ) : playerData ? (
-            <div className="text-center space-y-4">
-              {/* Player Name and Jersey */}
-              <div className="flex flex-col items-center">
-                <div className="w-20 h-20 bg-emerald-600 text-white rounded-full flex items-center justify-center text-2xl font-bold">
-                  #{playerData.jerseyNumber}
-                </div>
-                <h2 className="text-3xl font-semibold text-gray-800 mt-4">
-                  {playerData.firstName} {playerData.lastName}
-                </h2>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center text-gray-500">No player data found.</div>
-          )}
-        </div>
+        <div className="max-w-4xl w-full bg-white shadow-lg rounded-2xl p-10 my-8 mx-auto">
+  {loading ? (
+    <div className="text-center text-gray-500">Loading player data...</div>
+  ) : playerData ? (
+    <div className="flex flex-col items-center text-center space-y-6">
+      {/* --- PLAYER PHOTO --- */}
+      {(() => {
+        const fullName = `${playerData.firstName} ${playerData.lastName}`;
+        const defaultPhoto = "/playerPhotos/defaultProfile.png";
+        const manualPhoto = playerImages?.[fullName];
+        const fallbackPhoto =
+          `/playerPhotos/${playerData.firstName}${playerData.lastName}`.toLowerCase() + ".jpg";
+        const imagePath = manualPhoto || fallbackPhoto || defaultPhoto;
+
+        return (
+          <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full overflow-hidden border-4 border-gray-200 shadow-lg">
+            <img
+              src={imagePath}
+              alt={`${playerData.firstName} ${playerData.lastName}`}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = defaultPhoto;
+              }}
+              className="w-full h-full object-cover bg-gray-100 transition-transform duration-300 hover:scale-105"
+            />
+
+            {/* --- Jersey Number Badge --- */}
+            {/*<div
+              className={`absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-emerald-600 text-white text-xl sm:text-2xl font-bold w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center shadow-md border-4 border-white`}
+            >
+              #{playerData.jerseyNumber}
+            </div> */}
+          </div>
+        );
+      })()}
+
+      {/* --- PLAYER NAME --- */}
+      <h2 className="mt-6 text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-wide uppercase">
+        {playerData.firstName} {playerData.lastName}
+      </h2>
+    </div>
+  ) : (
+    <div className="text-center text-gray-500">No player data found.</div>
+  )}
+</div>
+
+
+
+
 
         <div className="max-w-4xl w-full bg-white shadow-lg rounded-xl p-8 my-8 mx-auto">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6">Your Teams</h2>
@@ -170,11 +204,25 @@ export default function PlayerHome() {
             <ul className="space-y-4">
               {teams.map((team) => (
                 <Link key={team.id} href={`/playerProfile/${team.id}/${user.uid}`} passHref>
-                  <li className="bg-gray-100 p-6 rounded-lg shadow-md hover:bg-gray-200 transition-all cursor-pointer">
-                    <h3 className="text-xl font-semibold text-gray-900">{team.gender}'s {team.sport}</h3>
-                    <p className="text-gray-600">{team.school}</p>
-                  </li>
-                </Link>
+  <li className="bg-white p-6 rounded-lg shadow-md hover:bg-gray-200 transition-all cursor-pointer flex justify-between items-center">
+    {/* LEFT: Team Info */}
+    <div>
+      <h3 className="text-xl font-semibold text-gray-900">
+        {team.gender}'s {team.sport}
+      </h3>
+      <p className="text-gray-600">{team.school}</p>
+    </div>
+
+    {/* RIGHT: Team Logo */}
+    <img
+      src={`/teamLogos/${team.school.toLowerCase().replace(/\s+/g, '')}.svg`}
+      alt={`${team.school} logo`}
+      className="w-16 h-16 sm:w-20 sm:h-20 object-contain ml-4"
+      onError={(e) => (e.currentTarget.src = '/teamLogos/default.png')}
+    />
+  </li>
+</Link>
+
               ))}
             </ul>
           ) : (

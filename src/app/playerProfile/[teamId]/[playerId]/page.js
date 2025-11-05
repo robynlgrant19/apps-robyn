@@ -46,6 +46,9 @@ export default function PlayerProfile() {
     'Blocking a shot...'
   ];
   const [loadingMessage, setLoadingMessage] = useState('');
+  const playerImages = {
+  "Robyn Grant": "/playerPhotos/robyngrant.jpg",
+};
 
 useEffect(() => {
   const randomIndex = Math.floor(Math.random() * hockeySayings.length);
@@ -516,54 +519,80 @@ useEffect(() => {
     }
   };
   
-  
-  
-  
 
-  
-  //console.log(gameStats[0].position);
+// --- Player image path logic ---
+const fullName = `${player.firstName} ${player.lastName}`;
+const defaultPhoto = "/playerPhotos/defaultProfile.png";
+
+// check if this player exists in your manual playerImages map
+const manualPhoto = playerImages?.[fullName];
+
+// try automatically generated file name, e.g. /playerPhotos/robyngrant.jpg
+const fallbackPhoto = `/playerPhotos/${player.firstName}${player.lastName}`.toLowerCase() + ".jpg";
+
+// prioritize manual → fallback → default
+const imagePath = manualPhoto || fallbackPhoto || defaultPhoto;
+
 
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <nav className={`w-full p-4 shadow-md fixed top-0 left-0 z-50 ${teamColors?.gradient}`}>
-  <div className="container mx-auto flex justify-between items-center">
-  <button
+  <div className="min-h-screen bg-gray-50 p-6">
+    {/* --- NAVBAR --- */}
+    <nav className={`w-full p-4 shadow-md fixed top-0 left-0 z-50 ${teamColors?.gradient}`}>
+      <div className="container mx-auto flex justify-between items-center">
+        <button
           onClick={() => router.back()}
           className="text-white px-4 py-2 text-xl"
         >
           ⬅
         </button>
-    <h1 className="text-white text-2xl font-semibold">RG PERFORMANCE</h1>
-    
-    
-  </div>
-</nav>
-      
-  
-      <div className="max-w-5xl mx-auto mt-20">
-      <div className= {`bg-white border-l-8 ${teamColors.border} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10`}>
-  <div className="flex justify-between items-center">
-    {/* Left Side: Player Info */}
-    <div>
-      <h1 className="text-3xl font-extrabold text-gray-900 tracking-wide uppercase">
-        {player.firstName} {player.lastName}
-      </h1>
-      <div className="text-lg text-gray-600 mt-1">
-        {gameStats.length > 0 && (
-          gameStats[0].position === 'F' ? 'Forward' :
-          gameStats[0].position === 'D' ? 'Defense' :
-          'Position not available'
-        )}
+        <h1 className="text-white text-2xl font-semibold">RG PERFORMANCE</h1>
       </div>
-    </div>
+    </nav>
 
-    {/* Right Side: Jersey Number */}
-    <div className={`text-4xl sm:text-5xl font-impact ${teamColors.text}`}>
-      #{player.jerseyNumber}
-    </div>
-  </div>
-</div>
+    {/* --- PAGE CONTENT --- */}
+    <div className="max-w-5xl mx-auto mt-24">
+      {/* PLAYER HEADER CARD */}
+      <div className={`bg-white border-l-8 ${teamColors.border} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10`}>
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-8 sm:gap-10">
+          {/* --- LEFT SIDE: Player Photo + Info --- */}
+          <div className="flex items-center gap-6">
+            {/* --- PROFILE PHOTO --- */}
+            <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden border-4 border-gray-200 shadow-md">
+              <img
+                src={imagePath}
+                alt={`${player.firstName} ${player.lastName}`}
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = defaultPhoto;
+                }}
+                className="w-full h-full object-cover bg-gray-100"
+              />
+            </div>
+
+            {/* --- PLAYER NAME + POSITION --- */}
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-wide uppercase leading-snug">
+                {player.firstName} {player.lastName}
+              </h1>
+              <p className="text-lg sm:text-xl text-gray-600 mt-1 font-medium">
+                {gameStats.length > 0
+                  ? gameStats[0].position === 'F'
+                    ? 'Forward'
+                    : gameStats[0].position === 'D'
+                    ? 'Defense'
+                    : 'Position not available'
+                  : 'Position not available'}
+              </p>
+            </div>
+          </div>
+
+          {/* --- RIGHT SIDE: Jersey Number --- */}
+          <div className={`text-5xl sm:text-6xl font-impact ${teamColors.text}`}>
+            #{player.jerseyNumber}
+          </div>
+        </div>
+      </div>
 
         
 
