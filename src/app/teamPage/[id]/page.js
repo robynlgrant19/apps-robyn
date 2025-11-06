@@ -479,7 +479,8 @@ export default function TeamPage() {
     )}
   </div>
 
-  {/* Delete Button */}
+{/*
+
   <div className="flex flex-col items-center gap-4 mb-12">
     <button
       onClick={toggleDeleteModal}
@@ -488,6 +489,7 @@ export default function TeamPage() {
       Delete Team
     </button>
   </div>
+*/}
 </section>
 
 
