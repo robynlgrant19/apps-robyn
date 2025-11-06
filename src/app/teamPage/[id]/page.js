@@ -327,14 +327,20 @@ export default function TeamPage() {
 
         {/* Forwards */}
         <div className="mb-10">
-          <p className="text-lg font-semibold text-gray-700 mb-4">Forwards</p>
+        <p className="text-xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-300 pb-2 mt-6">Forwards</p>
           {renderPlayersByPosition('F')}
         </div>
 
         {/* Defense */}
         <div>
-          <p className="text-lg font-semibold text-gray-700 mb-4">Defense</p>
+        <p className="text-xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-300 pb-2 mt-6">Defense</p>
           {renderPlayersByPosition('D')}
+        </div>
+
+        {/* Goalies */}
+        <div className="mb-10">
+        <p className="text-xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-300 pb-2 mt-6">Goalies</p>
+          {renderPlayersByPosition('G')}
         </div>
       </div>
     </section>
@@ -624,13 +630,21 @@ export default function TeamPage() {
   
   function renderPlayersByPosition(position) {
     
-    const filtered = players.filter(player => {
-  if (!player.position) return false;
-  const pos = player.position.toUpperCase();
-  if (position === 'F') return pos.startsWith('F'); 
-  if (position === 'D') return pos.startsWith('D'); 
-  return false;
-});
+    const filtered = players
+  .filter(player => {
+    if (!player.position) return false;
+    const pos = player.position.toUpperCase();
+    if (position === 'F') return pos.startsWith('F'); 
+    if (position === 'D') return pos.startsWith('D'); 
+    if (position === 'G') return pos.startsWith('G'); 
+    return false;
+  })
+  .sort((a, b) => {
+    const numA = parseInt(a.jerseyNumber);
+    const numB = parseInt(b.jerseyNumber);
+    return numA - numB;
+  });
+
 
 
     
@@ -684,8 +698,12 @@ export default function TeamPage() {
                 {player.firstName} {player.lastName}
               </h3>
               <p className="text-sm text-gray-600 mt-1">
-                {position === "F" ? "Forward" : "Defense"}
-              </p>
+                  {position === "F"
+                    ? "Forward"
+                    : position === "D"
+                    ? "Defense"
+                    : "Goalie"}
+                </p>
             </div>
           </div>
         </Link>

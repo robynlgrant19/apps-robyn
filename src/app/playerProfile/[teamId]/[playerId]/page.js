@@ -591,6 +591,8 @@ const imagePath = manualPhoto || fallbackPhoto || defaultPhoto;
                     ? 'Forward'
                     : gameStats[0].position === 'D'
                     ? 'Defense'
+                    : gameStats[0].position === 'G'
+                    ? 'Goalie'
                     : 'Position not available'
                   : 'Position not available'}
               </p>
