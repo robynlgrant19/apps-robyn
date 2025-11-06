@@ -234,52 +234,56 @@ export default function TeamPage() {
 
 
           <>
-           {/* Team Header */}
-<div
-  className={`relative bg-white border-l-8 ${teamColors?.text} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10`}
+          <div
+  className={`relative w-full bg-white border-l-8 ${teamColors?.text} rounded-xl shadow-md ring-1 ring-gray-200 py-4 mb-8`}
 >
-  <div className="flex flex-col sm:flex-row justify-between items-center w-full px-4 sm:px-8 py-4 sm:py-6">
-  {/* LEFT: Logo + Team Info */}
-  <div className="flex items-center gap-6 sm:gap-8">
-    {/* --- TEAM LOGO --- */}
-    <img
-      src={`/teamLogos/${teamData.school.toLowerCase().replace(/\s+/g, '')}.jpg`}
-      alt={`${teamData.school} logo`}
-      className="w-28 h-28 sm:w-32 sm:h-32 object-contain"
-      onError={(e) => (e.currentTarget.src = '/teamLogos/default.jpg')}
-    />
+  <div className="flex items-center justify-between w-full px-6 lg:px-12 gap-6">
+    
+    {/* LEFT SIDE: Logo + Info */}
+    <div className="flex items-center gap-6 min-w-0 flex-grow">
+      {/* Logo */}
+      <img
+        src={`/teamLogos/${teamData.school.toLowerCase().replace(/\s+/g, '')}.jpg`}
+        alt={`${teamData.school} logo`}
+        className="w-24 h-24 object-contain flex-shrink-0"
+        onError={(e) => (e.currentTarget.src = '/teamLogos/default.jpg')}
+      />
 
-    {/* --- TEAM NAME + CODE --- */}
-    <div className="flex flex-col justify-center">
-      <h1 className="text-4xl font-extrabold text-gray-900 leading-snug">
-        {teamData.gender}'s {teamData.sport}
-      </h1>
-      <h2 className="text-3xl font-bold text-gray-800 leading-snug">
-        {teamData.school}
-      </h2>
-      <p className="text-lg sm:text-xl text-gray-700 mt-2 font-medium">
-        Team Code:{' '}
-        <span className={`${teamColors?.text} font-semibold`}>
-          {teamData.teamCode}
-        </span>
-      </p>
+      {/* Info */}
+      <div className="flex flex-col min-w-0 leading-tight w-full">
+        <h1 className="text-3xl font-extrabold text-gray-900 truncate">
+          {teamData.gender}'s {teamData.sport}
+        </h1>
+
+        <h2 className="text-2xl font-bold text-gray-800 break-words">
+          {teamData.school}
+        </h2>
+
+        <p className="text-lg text-gray-700 font-medium mt-1">
+          Team Code:{' '}
+          <span className={`${teamColors?.text} font-semibold`}>
+            {teamData.teamCode}
+          </span>
+        </p>
+      </div>
     </div>
+
+    {/* RIGHT SIDE: Record */}
+    {teamData.record && (
+      <div className="text-right flex-shrink-0">
+        <p className="text-5xl font-impact text-gray-900 leading-none">
+          <span className={`${teamColors?.text}`}>
+            {teamData.record.wins}-{teamData.record.losses}-{teamData.record.ties}
+          </span>
+        </p>
+      </div>
+    )}
   </div>
-
-  {/* RIGHT: Record */}
-  {teamData.record && (
-    <div className="mt-4 sm:mt-0 text-center sm:text-right">
-      <p className="text-5xl sm:text-6xl font-impact tracking-wide text-gray-900 leading-tight">
-        <span className={`${teamColors?.text}`}>
-          {teamData.record.wins}-{teamData.record.losses}-{teamData.record.ties}
-        </span>
-      </p>
-    </div>
-  )}
 </div>
 
 
-</div>
+
+
 
 
            {/* Top Menu Bar */}
