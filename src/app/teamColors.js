@@ -17,4 +17,16 @@ export const teamColorClasses = {
   ring: 'ring-red-600'
 },
 
+'Plymouth State': {
+  text: 'text-emerald-800',
+  bg: 'bg-emerald-800',
+  hoverBg: 'hover:bg-emerald-900',
+  gradient: 'bg-gradient-to-r from-emerald-900 to-emerald-500',
+  border: 'border-emerald-800',
+  ring: 'ring-emerald-500'
+}
+,
+
+
+
   };

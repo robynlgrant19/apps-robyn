@@ -224,7 +224,7 @@ export default function PlayerHome() {
 
     {/* RIGHT: Team Logo */}
     <img
-      src={`/teamLogos/${team.school.toLowerCase().replace(/\s+/g, '')}.svg`}
+      src={`/teamLogos/${team.school.toLowerCase().replace(/\s+/g, '')}.jpg`}
       alt={`${team.school} logo`}
       className="w-16 h-16 sm:w-20 sm:h-20 object-contain ml-4"
       onError={(e) => (e.currentTarget.src = '/teamLogos/default.png')}
