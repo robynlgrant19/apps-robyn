@@ -28,6 +28,7 @@ export default function PlayerHome() {
   "Gracie Menicci": "/playerPhotos/graciemenicci.JPG", 
   "Emily Gerrie": "/playerPhotos/emilygerrie.JPG", 
   "Katie Porrello": "/playerPhotos/katieporrello.JPG", 
+  "Caeli Reed": "/playerPhotos/caelireed.JPG", 
 
   };
 
