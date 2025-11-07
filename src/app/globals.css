@@ -42,6 +42,20 @@ select option:hover {
   }
 }
 
+.select-none {
+  user-select: none !important;
+}
+
+[data-rbd-drag-handle-context-id] {
+  touch-action: none;
+}
+
+.draggable-ghost {
+  opacity: 0.2;
+  transform: scale(0.95);
+  filter: blur(2px);
+}
+
 
 
 

@@ -10,6 +10,9 @@ import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler,
 //import AuthDetails from "../../components/auth/authDetails";
 import CalendarView from "../../components/calendarView";
 import { teamColorClasses } from "../../teamColors";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+
+
 
 
 
@@ -44,9 +47,194 @@ export default function TeamPage() {
   const defaultPhoto = "/defaultProfile.png";
   const [showToast, setShowToast] = useState(false);
 
+  // LineUp State
+const [lineup, setLineup] = useState({
+  forwards: {
+    line1: { LW: null, C: null, RW: null },
+    line2: { LW: null, C: null, RW: null },
+    line3: { LW: null, C: null, RW: null },
+    line4: { LW: null, C: null, RW: null },
+  },
+  defense: {
+    pair1: { D1: null, D2: null },
+    pair2: { D1: null, D2: null },
+    pair3: { D1: null, D2: null },
+  },
+});
+
+function safeNumber(input) {
+  if (input === "-" || input === "" || input === null || input === undefined) return 0;
+  const num = Number(input);
+  return isNaN(num) ? 0 : num;
+}
 
 
-  
+// Drag handler
+function onDragEnd(result) {
+  const { source, destination, draggableId } = result;
+
+  // no destination → drag cancelled
+  if (!destination) return;
+
+  const player = players.find((p) => p.id === draggableId);
+  if (!player) return;
+
+  // parse source droppableId: slot-forwards-line1-LW
+  const sParts = source.droppableId.split("-");
+  const sSection = sParts[1];  // forwards or defense
+  const sGroup = sParts[2];    // line1, pair2 etc
+  const sSpot = sParts[3];     // LW, C, RW, D1, D2
+
+  // parse destination droppableId
+  const dParts = destination.droppableId.split("-");
+  const dSection = dParts[1];
+  const dGroup = dParts[2];
+  const dSpot = dParts[3];
+
+  setLineup((prev) => {
+    const updated = structuredClone(prev);
+
+    const sourcePlayer = updated[sSection][sGroup][sSpot];
+    const destPlayer = updated[dSection][dGroup][dSpot];
+
+    // ✅ CASE 1: simple move (destination empty)
+    if (!destPlayer) {
+      updated[sSection][sGroup][sSpot] = null;         // clear source
+      updated[dSection][dGroup][dSpot] = sourcePlayer; // move player
+    } 
+    else {
+      // ✅ CASE 2: swap
+      updated[sSection][sGroup][sSpot] = destPlayer;   // put dest player in source
+      updated[dSection][dGroup][dSpot] = sourcePlayer; // put dragged player in dest
+    }
+
+    return updated;
+  });
+}
+
+function LineupSlot({ droppableId, player, index }) {
+  return (
+    <Droppable droppableId={droppableId}>
+      {(dropProvided, dropSnapshot) => (
+        <div
+          ref={dropProvided.innerRef}
+          {...dropProvided.droppableProps}
+          className={`
+            relative
+            w-[260px]
+            h-[380px]              /* ✅ slightly taller to fit stats */
+            rounded-2xl
+            overflow-hidden
+            border
+            flex items-center justify-center
+            transition-colors duration-200
+            ${dropSnapshot.isDraggingOver ? "bg-emerald-50 border-emerald-500" : "bg-gray-100 border-gray-300"}
+          `}
+        >
+          {player ? (
+            <Draggable draggableId={player.id} index={index}>
+              {(dragProvided, dragSnapshot) => {
+                const isDragging = dragSnapshot.isDragging;
+
+                const goals = player.goals || 0;
+                const assists = player.assists || 0;
+                const points = goals + assists;
+
+                return (
+                  <div
+                    ref={dragProvided.innerRef}
+                    {...dragProvided.draggableProps}
+                    {...dragProvided.dragHandleProps}
+                    className={`
+                      absolute inset-0
+                      bg-white
+                      rounded-2xl
+                      border border-gray-200
+                      shadow-md
+                      flex flex-col
+                      cursor-grab active:cursor-grabbing
+                      transition-all duration-200
+                      ${isDragging ? "scale-[1.05] shadow-2xl z-50" : ""}
+                    `}
+                    style={{
+                      ...dragProvided.draggableProps.style,
+                    }}
+                  >
+                    {/* IMAGE */}
+                    <div className="relative w-full h-56 overflow-hidden bg-gray-100">
+                      <img
+                        src={`/playerPhotos/${(player.firstName + player.lastName).toLowerCase()}.jpg`}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = "/playerPhotos/defaultProfile.png";
+                        }}
+                        className="w-full h-full object-cover object-[50%_20%]"
+                      />
+
+                      {/* Jersey Number */}
+                      <div className="absolute bottom-3 right-3 bg-emerald-600 text-white text-sm font-bold px-3 py-1 rounded-full shadow-md">
+                        #{player.jerseyNumber}
+                      </div>
+                    </div>
+
+                    {/* NAME + POSITION */}
+                    <div className="p-4 text-center">
+                      <h3 className="text-lg font-semibold text-gray-800 leading-tight">
+                        {player.firstName} {player.lastName}
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {player.position === "F"
+                          ? "Forward"
+                          : player.position === "D"
+                          ? "Defense"
+                          : player.position === "G"
+                          ? "Goalie"
+                          : ""}
+                      </p>
+                    </div>
+
+                    {/* ✅ STATS BAR (G | A | PTS) */}
+                    <div className="mt-auto w-full px-4 pb-4">
+                      <div className="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 flex justify-around text-center shadow-sm">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-500">G</p>
+                          <p className="text-sm font-bold text-gray-800">{goals}</p>
+                        </div>
+
+                        <div>
+                          <p className="text-xs font-semibold text-gray-500">A</p>
+                          <p className="text-sm font-bold text-gray-800">{assists}</p>
+                        </div>
+
+                        <div>
+                          <p className="text-xs font-semibold text-gray-500">PTS</p>
+                          <p className="text-sm font-bold text-gray-800">{points}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                );
+              }}
+            </Draggable>
+          ) : (
+            <p className="text-gray-400 text-sm opacity-70 select-none">Empty</p>
+          )}
+
+          {dropProvided.placeholder}
+        </div>
+      )}
+    </Droppable>
+  );
+}
+
+
+
+
+
+
+
+
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * hockeySayings.length);
     setMessage(hockeySayings[randomIndex]);
@@ -118,26 +306,108 @@ export default function TeamPage() {
 
         setHasHudl(team.hasHudl ?? true);
 
-        if (team.players && team.players.length > 0) {
-          const playerPromises = team.players.map(async (playerId) => {
-            const playerRef = doc(db, "players", playerId);
-            const playerSnap = await getDoc(playerRef);
-            return playerSnap.exists() ? { id: playerSnap.id, ...playerSnap.data() } : null;
-          });
+        if (teamSnap.exists()) {
+  const team = teamSnap.data();
+  setTeamData(team);
+  setTeamColors(teamColorClasses[team.school] || {});
+  setHasHudl(team.hasHudl ?? true);
 
-        const playersData = (await Promise.all(playerPromises)).filter(p => p !== null);
-        setPlayers(playersData);
-        console.log("Fetched players (from team array):", id, playersData);
-      } else {
-        const playersQuery = query(
-          collection(db, "players"),
-          where("teamId", "==", id)
-        );
-        const playersSnap = await getDocs(playersQuery);
-        const playersData = playersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setPlayers(playersData);
-        console.log("Fetched players (by teamId):", id, playersData);
+  /* ✅ FIRST: FETCH ALL GAMES (needed for stats) */
+  const gamesQuery = query(collection(db, "games"), where("teamId", "==", id));
+  const querySnapshot = await getDocs(gamesQuery);
+  const gamesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  setGames(gamesData);
+
+  /* ✅ Compute record */
+  const wins = gamesData.filter((g) => g.teamScore > g.opponentScore).length;
+  const losses = gamesData.filter((g) => g.teamScore < g.opponentScore).length;
+  const ties = gamesData.filter((g) => g.teamScore === g.opponentScore).length;
+  setTeamData({ ...team, record: { wins, losses, ties } });
+
+  /* ✅ SECOND: FETCH PLAYERS + ATTACH STATS */
+  if (team.players && team.players.length > 0) {
+    const playerPromises = team.players.map(async (playerId) => {
+      const playerRef = doc(db, "players", playerId);
+      const playerSnap = await getDoc(playerRef);
+      if (!playerSnap.exists()) return null;
+
+      const p = playerSnap.data();
+      const jersey = p.jerseyNumber;
+
+      let totalGoals = 0;
+      let totalAssists = 0;
+
+      /* ✅ STATS SOURCE 1 — FROM PLAYER.GAMES[] */
+      if (Array.isArray(p.games)) {
+        p.games.forEach((g) => {
+          totalGoals += g.goals || 0;
+          totalAssists += g.assists || 0;
+        });
       }
+
+gamesData.forEach((game) => {
+  if (!Array.isArray(game.stats)) return;
+
+  const statLine = game.stats.find(
+    (s) => String(s["Shirt number"]) === String(jersey)
+  );
+
+  if (statLine) {
+    totalGoals += safeNumber(statLine["Goals"]);
+    totalAssists += safeNumber(statLine["Assists"]);
+  }
+});
+
+
+      /* ✅ RETURN PLAYER WITH STAT TOTALS */
+      return {
+  id: playerSnap.id,
+  ...p,
+  goals: totalGoals,
+  assists: totalAssists,
+  points: totalGoals + totalAssists,
+};
+
+    });
+
+    const playersData = (await Promise.all(playerPromises)).filter(Boolean);
+
+    setPlayers(playersData);
+
+    /* ✅ AUTO-FILL LINEUP NOW THAT PLAYERS HAVE STATS */
+    const forwards = playersData
+      .filter((p) => p.position?.toUpperCase().startsWith("F"))
+      .sort((a, b) => parseInt(a.jerseyNumber) - parseInt(b.jerseyNumber));
+
+    const defense = playersData
+      .filter((p) => p.position?.toUpperCase().startsWith("D"))
+      .sort((a, b) => parseInt(a.jerseyNumber) - parseInt(b.jerseyNumber));
+
+    const autoLineup = {
+      forwards: {
+        line1: { LW: forwards[0] || null, C: forwards[1] || null, RW: forwards[2] || null },
+        line2: { LW: forwards[3] || null, C: forwards[4] || null, RW: forwards[5] || null },
+        line3: { LW: forwards[6] || null, C: forwards[7] || null, RW: forwards[8] || null },
+        line4: { LW: forwards[9] || null, C: forwards[10] || null, RW: forwards[11] || null },
+      },
+      defense: {
+        pair1: { D1: defense[0] || null, D2: defense[1] || null },
+        pair2: { D1: defense[2] || null, D2: defense[3] || null },
+        pair3: { D1: defense[4] || null, D2: defense[5] || null },
+      },
+    };
+
+    setLineup(autoLineup);
+
+  } else {
+    /* ✅ fallback: fetch by teamId instead of team.players[] */
+    const playersQuery = query(collection(db, "players"), where("teamId", "==", id));
+    const playersSnap = await getDocs(playersQuery);
+    const playersData = playersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    setPlayers(playersData);
+  }
+}
+
 
 
 
@@ -292,6 +562,7 @@ export default function TeamPage() {
     { key: "home", label: "Home" },
     { key: "addGame", label: "Add Game" },
     { key: "yearOverview", label: "Year Overview" },
+    { key: "lineup", label: "LineUp" },
   ].map((tab) => (
     <button
       key={tab.key}
@@ -320,6 +591,7 @@ export default function TeamPage() {
   <>
     {/* Players Section */}
     <section className="mb-12">
+      
       <div className={`bg-white border-l-8 ${teamColors?.text} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10`}>
         <h2 className={`text-3xl font-extrabold tracking-wide uppercase text-gray-900 mb-6 border-b-4 ${teamColors?.border} inline-block pb-2 shadow-sm`}>
           Players
@@ -547,6 +819,93 @@ export default function TeamPage() {
     </button>
   </div>
 )}
+
+{activeTab === "lineup" && (
+  <div className="max-w-4xl w-full mx-auto overflow-x-hidden px-2">
+
+  <DragDropContext
+  onDragEnd={onDragEnd}
+  onDragStart={() => document.body.classList.add("select-none")}
+  onDragUpdate={() => {}}
+>
+
+    
+    <div className="bg-white rounded-xl shadow-lg ring-1 ring-gray-200 p-8 mb-10">
+
+      {/* TITLE */}
+      <h2 className={`text-3xl font-extrabold text-gray-900 mb-6 ${teamColors?.border} border-b-4 pb-2 inline-block tracking-wide`}>
+        Line Up Builder
+      </h2>
+
+      {/* ================= FORWARD LINES ================= */}
+      <h3 className="text-2xl font-bold text-gray-800 mt-6 mb-4">
+        Forward Lines
+      </h3>
+
+      <div className="space-y-8">
+        {Object.entries(lineup.forwards).map(([lineName, spots]) => (
+          <div key={lineName}>
+            <p className="text-lg font-semibold text-gray-700 mb-2 uppercase">
+              {lineName}
+            </p>
+
+            <div className="grid grid-cols-3 gap-4">
+              <LineupSlot
+                droppableId={`slot-forwards-${lineName}-LW`}
+                player={spots.LW}
+                index={0}
+              />
+              <LineupSlot
+                droppableId={`slot-forwards-${lineName}-C`}
+                player={spots.C}
+                index={1}
+              />
+              <LineupSlot
+                droppableId={`slot-forwards-${lineName}-RW`}
+                player={spots.RW}
+                index={2}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ================= DEFENSE PAIRS ================= */}
+      <h3 className="text-2xl font-bold text-gray-800 mt-10 mb-4">
+        Defense Pairs
+      </h3>
+
+      <div className="space-y-8">
+        {Object.entries(lineup.defense).map(([pairName, spots]) => (
+          <div key={pairName}>
+            <p className="text-lg font-semibold text-gray-700 mb-2 uppercase">
+              {pairName}
+            </p>
+
+            <div className="grid grid-cols-2 gap-4">
+              <LineupSlot
+                droppableId={`slot-defense-${pairName}-D1`}
+                player={spots.D1}
+                index={0}
+              />
+              <LineupSlot
+                droppableId={`slot-defense-${pairName}-D2`}
+                player={spots.D2}
+                index={1}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+    </div>
+    
+  </DragDropContext>
+  </div>
+)}
+
+
+
 
   
             {/* Upload Game Modal */}
