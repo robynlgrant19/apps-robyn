@@ -587,14 +587,14 @@ const imagePath = manualPhoto || fallbackPhoto || defaultPhoto;
                 {player.firstName} {player.lastName}
               </h1>
               <p className="text-lg sm:text-xl text-gray-600 mt-1 font-medium">
-                {gameStats.length > 0
-                  ? gameStats[0].position === 'F'
+                {player?.position
+                  ? player.position === 'F'
                     ? 'Forward'
-                    : gameStats[0].position === 'D'
+                    : player.position === 'D'
                     ? 'Defense'
-                    : gameStats[0].position === 'G'
+                    : player.position === 'G'
                     ? 'Goalie'
-                    : 'Position not available'
+                    : player.position
                   : 'Position not available'}
               </p>
             </div>

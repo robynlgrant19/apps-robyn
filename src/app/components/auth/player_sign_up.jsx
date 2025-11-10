@@ -32,6 +32,7 @@ const handleSignUp = async (e) => {
       uid: user.uid,
       role: "player",
       createdAt: new Date(),
+      position,
     });
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
