@@ -649,13 +649,25 @@ export default function TeamPage() {
 
 
     
-    if (filtered.length === 0) {
-      return (
-        <p className="text-gray-500">
-          No {position === 'F' ? 'forwards' : 'defense'} found.
-        </p>
-      );
-    }
+  if (filtered.length === 0) {
+  let positionLabel = '';
+
+  if (position === 'F') {
+    positionLabel = 'forwards';
+  } else if (position === 'D') {
+    positionLabel = 'defense';
+  } else if (position === 'G') {
+    positionLabel = 'goalies';
+  } else {
+    positionLabel = 'players';
+  }
+
+  return (
+    <p className="text-gray-500">
+      No {positionLabel} found.
+    </p>
+  );
+}
   
     return (
   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 p-4">
