@@ -137,6 +137,7 @@ useEffect(() => {
         let totalShortHandedShots = 0;
         let totalPenaltiesDrawn = 0;
         let totalPenaltyTime = 0;
+        let gamesPlayed = 0;
       
         const gameStats = [];
 
@@ -145,9 +146,10 @@ useEffect(() => {
         teamGames.forEach((doc) => {
           const gameData = doc.data();
           const playerStats = gameData.stats?.filter(stat => stat['Shirt number'] === jerseyNumberString);
-          //const position = gameData.stats?.Position;
+          if (playerStats && playerStats.length > 0) {
+              gamesPlayed += 1;
+            }
 
-          //console.log("Game Data:", gameData);
         
           playerStats?.forEach((stat) => {
             
@@ -215,6 +217,7 @@ useEffect(() => {
           ShortHandedShots: totalShortHandedShots,
           PenaltiesDrawn: totalPenaltiesDrawn,
           PenaltyTime: totalPenaltyTime,
+          GamesPlayed: gamesPlayed,
         });
         setGamesStats(gameStats);
         setTimeout(() => {
@@ -610,35 +613,108 @@ const imagePath = manualPhoto || fallbackPhoto || defaultPhoto;
         
 
        
-  <div className="mt-4 grid md:grid-cols-2 gap-6">
-  {/* Vertical Stat Summary Card */}
-  <div className="bg-white rounded-2xl shadow-md p-6 space-y-4">
-    <h2 className="text-xl font-semibold text-gray-800">Cumulative Stats</h2>
-    <div className="space-y-3">
-      <div className="flex justify-between border-b pb-2">
-        <span className="text-gray-600 font-medium">Points</span>
-        <span className="font-semibold text-gray-900">{cumulativeStats.Points}</span>
+  {/* PLAYER SUMMARY CARD */}
+<div className="mt-6">
+  <div className="bg-gradient-to-b from-gray-50 to-white rounded-3xl shadow-md border border-gray-200 p-10">
+    {/* Header */}
+    <div className="mb-10 text-center">
+      <h2 className="text-3xl font-extrabold text-gray-900 mb-2 tracking-tight">
+        Season Summary
+      </h2>
+      <p className="text-gray-500 text-sm">
+        Overview of {player.firstName}'s performance so far
+      </p>
+    </div>
+
+    {/* Top Row */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+      {/* Games Played */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center hover:shadow-md hover:-translate-y-1 transition">
+        <p className="text-sm font-medium text-emerald-700 uppercase tracking-wide mb-2">
+          Games Played
+        </p>
+        <p className="text-5xl font-extrabold text-emerald-700">
+          {cumulativeStats?.GamesPlayed ?? 0}
+        </p>
       </div>
-      <div className="flex justify-between border-b pb-2">
-        <span className="text-gray-600 font-medium">Goals</span>
-        <span className="font-semibold text-gray-900">{cumulativeStats.Goals}</span>
+
+      {/* Points */}
+      <div className="bg-emerald-100 border border-emerald-200 rounded-2xl p-8 text-center hover:shadow-md hover:-translate-y-1 transition">
+        <p className="text-sm font-medium text-emerald-800 uppercase tracking-wide mb-2">
+          Points
+        </p>
+        <p className="text-5xl font-extrabold text-emerald-800">
+          {cumulativeStats?.Points ?? 0}
+        </p>
       </div>
-      <div className="flex justify-between border-b pb-2">
-        <span className="text-gray-600 font-medium">Assists</span>
-        <span className="font-semibold text-gray-900">{cumulativeStats.Assists}</span>
+
+      {/* Goals */}
+      <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center hover:shadow-md hover:-translate-y-1 transition">
+        <p className="text-sm font-medium text-green-700 uppercase tracking-wide mb-2">
+          Goals
+        </p>
+        <p className="text-5xl font-extrabold text-green-700">
+          {cumulativeStats?.Goals ?? 0}
+        </p>
       </div>
-      <div className="flex justify-between">
-        <span className="text-gray-600 font-medium">Plus/Minus</span>
-        <span className="font-semibold text-gray-900">{cumulativeStats['+/-']}</span>
+
+      {/* Assists */}
+      <div className="bg-teal-50 border border-teal-200 rounded-2xl p-8 text-center hover:shadow-md hover:-translate-y-1 transition">
+        <p className="text-sm font-medium text-teal-700 uppercase tracking-wide mb-2">
+          Assists
+        </p>
+        <p className="text-5xl font-extrabold text-teal-700">
+          {cumulativeStats?.Assists ?? 0}
+        </p>
+      </div>
+
+      {/* Plus/Minus */}
+      <div className="bg-lime-50 border border-lime-200 rounded-2xl p-8 text-center hover:shadow-md hover:-translate-y-1 transition">
+        <p className="text-sm font-medium text-lime-700 uppercase tracking-wide mb-2">
+          Plus / Minus
+        </p>
+        <p className="text-5xl font-extrabold text-lime-700">
+          {cumulativeStats['+/-'] ?? 0}
+        </p>
+      </div>
+    </div>
+
+    {/* Second Row */}
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8">
+      {/* Shots */}
+      <div className="bg-gray-100 border border-gray-200 rounded-2xl p-8 text-center hover:shadow-md hover:-translate-y-1 transition">
+        <p className="text-sm font-medium text-gray-700 uppercase tracking-wide mb-2">
+          Shots on Goal
+        </p>
+        <p className="text-5xl font-extrabold text-gray-800">
+          {cumulativeStats?.ShotsOnGoal ?? 0}
+        </p>
+      </div>
+
+      {/* Hits */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center hover:shadow-md hover:-translate-y-1 transition">
+        <p className="text-sm font-medium text-emerald-700 uppercase tracking-wide mb-2">
+          Hits
+        </p>
+        <p className="text-5xl font-extrabold text-emerald-700">
+          {cumulativeStats?.Hits ?? 0}
+        </p>
+      </div>
+
+      {/* Blocked Shots */}
+      <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center hover:shadow-md hover:-translate-y-1 transition">
+        <p className="text-sm font-medium text-green-700 uppercase tracking-wide mb-2">
+          Blocked Shots
+        </p>
+        <p className="text-5xl font-extrabold text-green-700">
+          {cumulativeStats?.BlockedShots ?? 0}
+        </p>
       </div>
     </div>
   </div>
-
-  {/* Radar Chart */}
-  <div className="bg-white rounded-2xl shadow-md p-6">
-    <Radar data={radarData} options={radarOptions} />
-  </div>
 </div>
+
+
 
 
 <h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-6">
@@ -740,18 +816,34 @@ const imagePath = manualPhoto || fallbackPhoto || defaultPhoto;
     Faceoffs
     </h2>
     <div className="bg-white rounded-2xl shadow-md p-6 mt-6">
-        <h2 className="text-xl font-semibold mb-2">Faceoffs Won vs Faceoffs Lost</h2>
-        <h2 className="text-xl font-bold text-center text-black-600 mb-4">
-          Total Faceoffs:
-        </h2>
-        <h3 className={`text-2xl font-bold text-center ${teamColors.text} mb-4`}>
-          {cumulativeStats.Faceoffs}
-        </h3>
 
-      <div className="w-80 h-80 mx-auto"> 
-        <Pie data={pieData} options={{ maintainAspectRatio: false }} />
-      </div>
-      </div>
+          {/* Total */}
+          <h2 className="text-xl font-bold text-center text-black mb-1">
+            Total Faceoffs:
+          </h2>
+          <h3 className={`text-2xl font-bold text-center ${teamColors.text} mb-6`}>
+            {cumulativeStats.Faceoffs ?? 0}
+          </h3>
+
+          {/* Pie Chart */}
+          <div className="w-80 h-80 mx-auto flex flex-col items-center">
+            <Pie data={pieData} options={{ maintainAspectRatio: false }} />
+          </div>
+          {/* Overall Percentage */}
+    <div className="mt-6 text-center">
+      {(() => {
+        const won = cumulativeStats.FaceoffsWon ?? 0;
+        const total = cumulativeStats.Faceoffs ?? 0;
+        const winPct = total > 0 ? ((won / total) * 100).toFixed(1) : 0;
+        return (
+          <p className="text-3xl font-extrabold text-emerald-700">
+            {winPct}% Win Rate
+          </p>
+        );
+      })()}
+    </div>
+        </div>
+
 {/*
     <div className="mt-6">
   <h2 className="text-xl font-semibold mb-4">Faceoffs per Game</h2>

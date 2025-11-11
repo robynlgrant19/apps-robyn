@@ -241,12 +241,8 @@ useEffect(() => {
         const topGoals = [...playersArray].sort((a, b) => b.goals - a.goals).slice(0, 10);
         const topAssists = [...playersArray].sort((a, b) => b.assists - a.assists).slice(0, 10);
   
-        
-        console.log('Top Points:', topPoints);
-        console.log('Top Goals:', topGoals);
-        console.log('Top Assists:', topAssists);
-        
-  
+        const playersWithPoints = playersArray.filter((p) => p.points > 0).length;
+        teamStats.PlayersWithPoints = playersWithPoints;
         
         setTeamStats(teamStats);
         setGameStats(gameStatsArray);
@@ -637,39 +633,106 @@ return (
   </button>
 </div>*/}
 
-      <div className="mt-4 grid md:grid-cols-2 gap-6">
-        {/* summary */}
-      <div className="bg-white rounded-2xl shadow-md p-6 space-y-4 border border-gray-200">
-        <h2 className="text-xl font-semibold text-gray-800">Cumulative Stats</h2>
-        <div className="space-y-3">
-          <div className="flex justify-between border-b pb-2">
-            <span className="text-gray-600 font-medium">Points</span>
-            <span className="font-semibold text-gray-900">{teamStats.Points}</span>
-          </div>
-          <div className="flex justify-between border-b pb-2">
-            <span className="text-gray-600 font-medium">Goals</span>
-            <span className="font-semibold text-gray-900">{teamStats.Goals}</span>
-          </div>
-          <div className="flex justify-between border-b pb-2">
-            <span className="text-gray-600 font-medium">Assists</span>
-            <span className="font-semibold text-gray-900">{teamStats.Assists}</span>
-          </div>
-          <div className="flex justify-between border-b pb-2">
-            <span className="text-gray-600 font-medium">Plus/Minus</span>
-            <span className="font-semibold text-gray-900">{teamStats['+/-']}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600 font-medium">Shots</span>
-            <span className="font-semibold text-gray-900">{teamStats.Shots}</span>
-          </div>
-        </div>
+ <div className="mt-10">
+  <div className="bg-gradient-to-b from-gray-50 to-white rounded-3xl shadow-md border border-gray-200 p-10">
+    {/* Header */}
+    <div className="mb-10 text-center">
+      <h2 className="text-3xl font-extrabold text-gray-900 mb-2 tracking-tight">
+        {gameInfo?.opponent}
+      </h2>
+      <p className="text-gray-500 text-sm flex flex-col sm:flex-row items-center justify-center gap-2">
+        <span>{gameInfo?.location}</span>
+        <span>•</span>
+        <span>{gameInfo?.gameDate}</span>
+      </p>
+    </div>
+
+    {/* Stats Grid */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Goals */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center shadow-sm hover:shadow-md hover:-translate-y-1 transition">
+        <p className="text-sm font-medium text-emerald-800 uppercase tracking-wide mb-2">
+          Goals
+        </p>
+        <p className="text-5xl font-extrabold text-emerald-700">
+          {teamStats?.Goals ?? "-"}
+        </p>
       </div>
 
-      {/* radar chart */}
-      <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-        <Radar data={radarData} options={radarOptions} />
+      {/* Players with Points */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center shadow-sm hover:shadow-md hover:-translate-y-1 transition">
+        <p className="text-sm font-medium text-emerald-800 uppercase tracking-wide mb-2">
+          Players with Points
+        </p>
+        <p className="text-5xl font-extrabold text-emerald-700">
+          {teamStats?.PlayersWithPoints ?? 0}
+        </p>
+      </div>
+
+      {/* Faceoff % */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center shadow-sm hover:shadow-md hover:-translate-y-1 transition">
+        <p className="text-sm font-medium text-emerald-800 uppercase tracking-wide mb-2">
+          Faceoff %
+        </p>
+        <p className="text-5xl font-extrabold text-emerald-700">
+          {teamFaceoffPercentage ?? "—"}
+        </p>
+      </div>
+
+      {/* Blocked Shots */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center shadow-sm hover:shadow-md hover:-translate-y-1 transition">
+        <p className="text-sm font-medium text-emerald-800 uppercase tracking-wide mb-2">
+          Blocked Shots
+        </p>
+        <p className="text-5xl font-extrabold text-emerald-700">
+          {teamStats?.BlockedShots ?? 0}
+        </p>
       </div>
     </div>
+
+    {/* Second Row of Metrics */}
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8">
+      {/* Hits */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center shadow-sm hover:shadow-md hover:-translate-y-1 transition">
+        <p className="text-sm font-medium text-emerald-800 uppercase tracking-wide mb-2">
+          Hits
+        </p>
+        <p className="text-5xl font-extrabold text-emerald-700">
+          {teamStats?.Hits ?? 0}
+        </p>
+      </div>
+
+      {/* Power Play Shots */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center shadow-sm hover:shadow-md hover:-translate-y-1 transition">
+        <p className="text-sm font-medium text-emerald-800 uppercase tracking-wide mb-2">
+          Power Play Shots
+        </p>
+        <p className="text-5xl font-extrabold text-emerald-700">
+          {teamStats?.PowerPlayShots ?? 0}
+        </p>
+      </div>
+
+      {/* Short-Handed Shots */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center shadow-sm hover:shadow-md hover:-translate-y-1 transition">
+        <p className="text-sm font-medium text-emerald-800 uppercase tracking-wide mb-2">
+          Short-Handed Shots
+        </p>
+        <p className="text-5xl font-extrabold text-emerald-700">
+          {teamStats?.ShortHandedShots ?? 0}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
 
 {/* leaders */}
 <div className="mt-12 px-6">
@@ -712,6 +775,136 @@ return (
     </table>
   </div>
 </div>
+
+{/* ================= WHOLE TEAM CHARTS ================= */}
+<h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-12">
+  Team Overview
+</h2>
+
+{/* TEAM SHOOTING BREAKDOWN */}
+<div className="bg-gradient-to-b from-gray-50 to-white rounded-3xl shadow-md border border-gray-200 p-10 mb-10">
+  <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center tracking-tight">
+    Shooting Breakdown
+  </h3>
+  <div className="flex flex-col items-center justify-center space-y-4">
+    <div className="w-72 h-72 sm:w-80 sm:h-80">
+      <Pie
+        data={{
+          labels: ['Shots on Goal', 'Missed Shots', 'Blocked Shots'],
+          datasets: [
+            {
+              data: [
+                teamStats.ShotsOnGoal,
+                Math.max(teamStats.Shots - teamStats.ShotsOnGoal, 0),
+                teamStats.BlockedShots,
+              ],
+              backgroundColor: [
+                'rgba(16, 185, 129, 0.8)', // emerald mid
+                'rgba(4, 120, 87, 0.4)',   // dark emerald muted
+                'rgba(239, 68, 68, 0.25)', // soft red
+              ],
+              borderColor: [
+                'rgba(4, 120, 87, 1)',     // dark emerald border
+                'rgba(4, 120, 87, 1)',     // match border
+                'rgba(239, 68, 68, 0.6)',  // red border
+              ],
+              borderWidth: 2,
+            },
+          ],
+        }}
+        options={{
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#374151',
+                font: { size: 14, family: 'Inter, sans-serif' },
+                padding: 16,
+              },
+            },
+          },
+          maintainAspectRatio: false,
+        }}
+      />
+    </div>
+    <p className="text-sm text-gray-500 italic text-center">
+      {teamStats.Shots} total shots — {teamStats.ShotsOnGoal} on goal
+    </p>
+  </div>
+</div>
+
+{/* OFFENSE VS DEFENSE CONTRIBUTION */}
+<div className="bg-gradient-to-b from-white to-gray-50 rounded-3xl shadow-md border border-gray-200 p-10">
+  <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center tracking-tight">
+    Offense vs Defense Contribution
+  </h3>
+
+  {/* Center the chart */}
+  <div className="flex justify-center">
+    <div className="w-full max-w-2xl h-96">
+      <Bar
+        data={{
+          labels: ['Offense', 'Defense'],
+          datasets: [
+            {
+              label: 'Team Totals',
+              data: [
+                teamStats.Goals + teamStats.Points + teamStats.PowerPlayShots,
+                teamStats.BlockedShots + teamStats.Hits + teamStats.ShortHandedShots,
+              ],
+              backgroundColor: [
+                'rgba(16, 185, 129, 0.8)', // bright emerald
+                'rgba(4, 120, 87, 0.7)',   // deep emerald
+              ],
+              borderColor: [
+                'rgba(4, 120, 87, 1)',
+                'rgba(4, 120, 87, 1)',
+              ],
+              borderWidth: 2,
+              borderRadius: 12,
+            },
+          ],
+        }}
+        options={{
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              grid: { color: 'rgba(209, 213, 219, 0.4)' },
+              ticks: { color: '#374151', font: { family: 'Inter, sans-serif' } },
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(209, 213, 219, 0.3)' },
+              ticks: { color: '#374151', font: { family: 'Inter, sans-serif' } },
+              title: {
+                display: true,
+                text: 'Total Actions',
+                color: '#6B7280',
+                font: { family: 'Inter, sans-serif', weight: '500' },
+              },
+            },
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(4, 120, 87, 0.9)', // deep emerald tooltip
+              titleColor: '#fff',
+              bodyColor: '#d1fae5',
+              cornerRadius: 8,
+              callbacks: {
+                label: (context) => `${context.parsed.y} total`,
+              },
+            },
+          },
+        }}
+      />
+    </div>
+  </div>
+</div>
+
+
+
+
 
 <h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-6">
     Around the Net

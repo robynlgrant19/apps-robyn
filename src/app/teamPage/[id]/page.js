@@ -372,7 +372,7 @@ export default function TeamPage() {
     </button>
   </div>
 
-  {/* Games Section */}
+
   <div
     className={`bg-white border-l-8 ${teamColors?.text} rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10`}
   >
@@ -512,7 +512,7 @@ export default function TeamPage() {
 
 {activeTab === "addGame" && (
   <div className="bg-white rounded-xl shadow-lg ring-1 ring-gray-200 p-8 text-center">
-    <h2 className="text-2xl font-bold text-gray-900 mb-4">Upload or Enter Game Stats</h2>
+    <h2 className="text-2xl font-bold text-gray-900 mb-4">Upload a Game</h2>
     {hasHudl ? (
       <Dropbox
   teamId={teamData?.id || id}
