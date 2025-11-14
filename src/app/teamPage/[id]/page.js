@@ -40,6 +40,7 @@ export default function TeamPage() {
   "Emily Gerrie": "/playerPhotos/emilygerrie.JPG", 
   "Katie Porrello": "/playerPhotos/katieporrello.JPG", 
   "Caeli Reed": "/playerPhotos/caelireed.JPG", 
+  "Morgan Cunningham": "/playerPhotos/morgancunningham.JPG",
 
   };
   const defaultPhoto = "/defaultProfile.png";
