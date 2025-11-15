@@ -19,6 +19,7 @@ import {
   ArcElement
 } from 'chart.js';
 import TeamLeaders from '../../components/TeamLeaders';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 ChartJS.register(
   RadialLinearScale,
@@ -220,14 +221,20 @@ useEffect(() => {
               goals: 0,
               assists: 0,
               points: 0,
+              shots: 0,
             };
           }
   
           const goals = stat.Goals === '-' || stat.Goals === undefined ? 0 : Number(stat.Goals);
           const assists = stat.Assists === '-' || stat.Assists === undefined ? 0 : Number(stat.Assists);
+          const shots = stat.Shots === '-' ? 0 : Number(stat.Shots || 0);
+
           playersMap[name].goals += goals;
           playersMap[name].assists += assists;
-          playersMap[name].points += goals + assists;
+          playersMap[name].shots += shots;
+          playersMap[name].points = playersMap[name].goals + playersMap[name].assists;
+
+
         });
   
         const calculatedFaceoffPct =
@@ -240,6 +247,11 @@ useEffect(() => {
         const topPoints = [...playersArray].sort((a, b) => b.points - a.points).slice(0, 10);
         const topGoals = [...playersArray].sort((a, b) => b.goals - a.goals).slice(0, 10);
         const topAssists = [...playersArray].sort((a, b) => b.assists - a.assists).slice(0, 10);
+        const topShots = [...playersArray]
+          .sort((a, b) => b.shots - a.shots)
+          .slice(0, 10);
+
+
   
         const playersWithPoints = playersArray.filter((p) => p.points > 0).length;
         teamStats.PlayersWithPoints = playersWithPoints;
@@ -251,6 +263,7 @@ useEffect(() => {
           points: topPoints,
           goals: topGoals,
           assists: topAssists,
+          shots: topShots,
         });
         setTimeout(() => {
           setLoading(false);
@@ -575,6 +588,136 @@ const barOptionsShifts = {
   }
 };
 
+const sumByPosition = (statsArray) => {
+  let forwardShots = 0;
+  let defenseShots = 0;
+
+  let forwardSOG = 0;
+  let defenseSOG = 0;
+
+  statsArray.forEach((p) => {
+    const pos = p.position; // lowercase
+    const shots = Number(p.shots || 0);
+    const sog = Number(p.shotsOnGoal || 0);
+
+    if (pos === "F") {
+      forwardShots += shots;
+      forwardSOG += sog;
+    }
+
+    if (pos === "D") {
+      defenseShots += shots;
+      defenseSOG += sog;
+    }
+  });
+
+  return {
+    forwardShots,
+    defenseShots,
+    forwardSOG,
+    defenseSOG,
+  };
+};
+
+
+console.log("TEAM STATS:", teamStats);
+console.log("PLAYER STATS ARRAY:", teamStats.stats);
+
+
+const { forwardShots, defenseShots, forwardSOG, defenseSOG } =
+  sumByPosition(gameStats || []);
+
+
+// --- Averages for the 3 ice-time metrics ---
+const avgShiftLength =
+  sortedGameStatsShift.length > 0
+    ? (sortedGameStatsShift.reduce((sum, stat) => sum + stat.shiftLength, 0) /
+        sortedGameStatsShift.length).toFixed(1)
+    : 0;
+
+const avgIceTime =
+  sortedGameStatsIceTime.length > 0
+    ? (sortedGameStatsIceTime.reduce((sum, stat) => sum + stat.iceTime, 0) /
+        sortedGameStatsIceTime.length).toFixed(1)
+    : 0;
+
+const avgShifts =
+  sortedGameStatsShifts.length > 0
+    ? (sortedGameStatsShifts.reduce((sum, stat) => sum + stat.shifts, 0) /
+        sortedGameStatsShifts.length).toFixed(1)
+    : 0;
+
+const combinedAveragesData = {
+  labels: ["Avg Shift Length", "Avg Ice Time", "Avg Shifts"],
+  datasets: [
+    {
+      label: "Averages",
+      data: [Number(avgShiftLength), Number(avgIceTime), Number(avgShifts)],
+      backgroundColor: [
+        "rgba(16, 185, 129, 0.8)", // emerald
+        "rgba(34, 197, 94, 0.7)",  // lighter green
+        "rgba(4, 120, 87, 0.6)",   // deep emerald
+      ],
+      borderColor: [
+        "rgba(4, 120, 87, 1)",
+        "rgba(4, 120, 87, 1)",
+        "rgba(4, 120, 87, 1)",
+      ],
+      borderWidth: 2,
+      borderRadius: 12,
+    },
+  ],
+};
+
+const combinedAveragesOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: (ctx) => `${ctx.parsed.y}`,
+      },
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+    },
+  },
+};
+
+// Shooting averages
+const totalPlayers = gameStats.length;
+
+const avgShots =
+  totalPlayers > 0
+    ? (gameStats.reduce((sum, p) => sum + Number(p.shots || 0), 0) / totalPlayers).toFixed(1)
+    : 0;
+
+const avgSOG =
+  totalPlayers > 0
+    ? (gameStats.reduce((sum, p) => sum + Number(p.shotsOnGoal || 0), 0) / totalPlayers).toFixed(1)
+    : 0;
+
+const avgAccuracy =
+  avgShots > 0 ? ((avgSOG / avgShots) * 100).toFixed(1) : 0;
+
+// Position-based accuracy
+const forwardAccuracy =
+  forwardShots > 0 ? ((forwardSOG / forwardShots) * 100).toFixed(1) : 0;
+
+const defenseAccuracy =
+  defenseShots > 0 ? ((defenseSOG / defenseShots) * 100).toFixed(1) : 0;
+
+
+
+
+
+
+
+
+
 
 return (
   <div className="min-h-screen bg-gray-50 p-6">
@@ -777,16 +920,34 @@ return (
 </div>
 
 {/* ================= WHOLE TEAM CHARTS ================= */}
-<h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-12">
-  Team Overview
-</h2>
+
+<h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-6">
+    Around the Net
+    </h2>
+
+  {/* shots bar chart */}
+    <div className="col-span-2 bg-white rounded-2xl shadow-md p-6 mb-6 border border-gray-200">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-semibold text-gray-800">Shots</h3>
+        <select
+          value={positionFilterShots}
+          onChange={(e) => setPositionFilterShots(e.target.value)}
+          className="border rounded px-3 py-1 text-sm"
+        >
+          <option value="All">All</option>
+          <option value="F">Forwards</option>
+          <option value="D">Defensemen</option>
+        </select>
+      </div>
+      <Bar data={barDataShotsStacked} options={barOptionsShotsStacked} />
+    </div>
 
 {/* TEAM SHOOTING BREAKDOWN */}
 <div className="bg-gradient-to-b from-gray-50 to-white rounded-3xl shadow-md border border-gray-200 p-10 mb-10">
   <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center tracking-tight">
     Shooting Breakdown
   </h3>
-  <div className="flex flex-col items-center justify-center space-y-4">
+  <div className="flex flex-col items-center justify-center space-y-3">
     <div className="w-72 h-72 sm:w-80 sm:h-80">
       <Pie
         data={{
@@ -799,14 +960,14 @@ return (
                 teamStats.BlockedShots,
               ],
               backgroundColor: [
-                'rgba(16, 185, 129, 0.8)', // emerald mid
-                'rgba(4, 120, 87, 0.4)',   // dark emerald muted
-                'rgba(239, 68, 68, 0.25)', // soft red
+                'rgba(16, 185, 129, 0.8)',
+                'rgba(4, 120, 87, 0.4)',
+                'rgba(239, 68, 68, 0.25)',
               ],
               borderColor: [
-                'rgba(4, 120, 87, 1)',     // dark emerald border
-                'rgba(4, 120, 87, 1)',     // match border
-                'rgba(239, 68, 68, 0.6)',  // red border
+                'rgba(4, 120, 87, 1)',
+                'rgba(4, 120, 87, 1)',
+                'rgba(239, 68, 68, 0.6)',
               ],
               borderWidth: 2,
             },
@@ -827,107 +988,142 @@ return (
         }}
       />
     </div>
-    <p className="text-sm text-gray-500 italic text-center">
-      {teamStats.Shots} total shots — {teamStats.ShotsOnGoal} on goal
-    </p>
+
+    {/* Combined Stats Block */}
+    <div className="text-center text-gray-600 space-y-1">
+      <p className="text-sm">
+        {teamStats.Shots} total shots — {teamStats.ShotsOnGoal} on goal
+      </p>
+      <p className="text-sm font-medium text-emerald-700">
+  <span className="font-bold">
+    {teamStats.Shots > 0
+      ? ((teamStats.ShotsOnGoal / teamStats.Shots) * 100).toFixed(1)
+      : 0}%
+  </span>{" "}
+  of shots were on net
+</p>
+
+    </div>
+
   </div>
 </div>
 
-{/* OFFENSE VS DEFENSE CONTRIBUTION */}
-<div className="bg-gradient-to-b from-white to-gray-50 rounded-3xl shadow-md border border-gray-200 p-10">
+
+{/* SHOTS BREAKDOWN (FORWARDS VS DEFENSE) */}
+<div className="bg-gradient-to-b from-white to-gray-50 rounded-3xl shadow-md border border-gray-200 p-10 mb-10">
   <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center tracking-tight">
-    Offense vs Defense Contribution
+    Shots: Forwards vs Defense
   </h3>
 
-  {/* Center the chart */}
   <div className="flex justify-center">
-    <div className="w-full max-w-2xl h-96">
-      <Bar
-        data={{
-          labels: ['Offense', 'Defense'],
-          datasets: [
-            {
-              label: 'Team Totals',
-              data: [
-                teamStats.Goals + teamStats.Points + teamStats.PowerPlayShots,
-                teamStats.BlockedShots + teamStats.Hits + teamStats.ShortHandedShots,
-              ],
-              backgroundColor: [
-                'rgba(16, 185, 129, 0.8)', // bright emerald
-                'rgba(4, 120, 87, 0.7)',   // deep emerald
-              ],
-              borderColor: [
-                'rgba(4, 120, 87, 1)',
-                'rgba(4, 120, 87, 1)',
-              ],
-              borderWidth: 2,
-              borderRadius: 12,
-            },
-          ],
-        }}
-        options={{
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              grid: { color: 'rgba(209, 213, 219, 0.4)' },
-              ticks: { color: '#374151', font: { family: 'Inter, sans-serif' } },
-            },
-            y: {
-              beginAtZero: true,
-              grid: { color: 'rgba(209, 213, 219, 0.3)' },
-              ticks: { color: '#374151', font: { family: 'Inter, sans-serif' } },
-              title: {
-                display: true,
-                text: 'Total Actions',
-                color: '#6B7280',
-                font: { family: 'Inter, sans-serif', weight: '500' },
-              },
-            },
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: 'rgba(4, 120, 87, 0.9)', // deep emerald tooltip
-              titleColor: '#fff',
-              bodyColor: '#d1fae5',
-              cornerRadius: 8,
-              callbacks: {
-                label: (context) => `${context.parsed.y} total`,
-              },
-            },
-          },
-        }}
-      />
+    <div className="w-full max-w-2xl h-80">
+<Bar
+  plugins={[ChartDataLabels]} // Only this chart uses datalabels
+  data={{
+    labels: ["Forwards", "Defense"],
+    datasets: [
+      {
+        label: "Shots",
+        data: [forwardShots, defenseShots],
+        backgroundColor: [
+          "rgba(16, 185, 129, 0.8)",
+          "rgba(4, 120, 87, 0.7)",
+        ],
+        borderColor: ["rgba(4, 120, 87, 1)", "rgba(4, 120, 87, 1)"],
+        borderWidth: 2,
+        borderRadius: 12,
+      },
+    ],
+  }}
+  options={{
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      datalabels: {
+        color: "#1f2937", // Gray-800
+        anchor: "end",
+        align: "end",
+        clamp: true,
+        font: {
+          weight: "bold",
+          size: 14,
+        },
+        formatter: (value) => value,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        suggestedMax: Math.max(forwardShots, defenseShots) + 2, // Extra headroom only for this chart
+      },
+    },
+  }}
+/>
+
+
+    </div>
+  </div>
+</div>
+
+{/* SHOTS ON GOAL BREAKDOWN */}
+<div className="bg-gradient-to-b from-white to-gray-50 rounded-3xl shadow-md border border-gray-200 p-10 mb-10">
+  <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center tracking-tight">
+    Shots on Goal: Forwards vs Defense
+  </h3>
+
+  <div className="flex justify-center">
+    <div className="w-full max-w-2xl h-80">
+     <Bar
+  plugins={[ChartDataLabels]} // Only this chart uses datalabels
+  data={{
+    labels: ["Forwards", "Defense"],
+    datasets: [
+      {
+        label: "Shots on Goal",
+        data: [forwardSOG, defenseSOG],
+        backgroundColor: [
+          "rgba(16, 185, 129, 0.8)",
+          "rgba(4, 120, 87, 0.7)",
+        ],
+        borderColor: ["rgba(4, 120, 87, 1)", "rgba(4, 120, 87, 1)"],
+        borderWidth: 2,
+        borderRadius: 12,
+      },
+    ],
+  }}
+  options={{
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      datalabels: {
+        color: "#1f2937",
+        anchor: "end",
+        align: "end",
+        clamp: true,
+        font: {
+          weight: "bold",
+          size: 14,
+        },
+        formatter: (value) => value,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        suggestedMax: Math.max(forwardSOG, defenseSOG) + 2, // Extra padding to show label
+      },
+    },
+  }}
+/>
+
+
     </div>
   </div>
 </div>
 
 
-
-
-
-<h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-6">
-    Around the Net
-    </h2>
-
-    {/* shots bar chart */}
-    <div className="col-span-2 bg-white rounded-2xl shadow-md p-6 mt-6 border border-gray-200">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-semibold text-gray-800">Shots</h3>
-        <select
-          value={positionFilterShots}
-          onChange={(e) => setPositionFilterShots(e.target.value)}
-          className="border rounded px-3 py-1 text-sm"
-        >
-          <option value="All">All</option>
-          <option value="F">Forwards</option>
-          <option value="D">Defensemen</option>
-        </select>
-      </div>
-      <Bar data={barDataShotsStacked} options={barOptionsShotsStacked} />
-    </div>
-
-    {/* plus/minus chart */}
+{/*
+    
     <div className="col-span-2 bg-white rounded-2xl shadow-md p-6 mt-6 border border-gray-200">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-semibold text-gray-800">Plus/Minus</h3>
@@ -942,10 +1138,37 @@ return (
         </select>
       </div>
       <Bar data={barDataPlusMinus} options={barOptionsPlusMinus} />
-    </div>
+    </div> 
+    */}
   
    
 <h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-6">Ice Time</h2>
+
+{/* ICE TIME SUMMARY CARDS */}
+<div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-6">
+  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center shadow-sm hover:shadow-md transition">
+    <p className="text-sm font-medium text-emerald-800 uppercase tracking-wide mb-2">
+      Avg Shift Length
+    </p>
+    <p className="text-4xl font-extrabold text-emerald-700">{avgShiftLength}s</p>
+  </div>
+
+  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center shadow-sm hover:shadow-md transition">
+    <p className="text-sm font-medium text-emerald-800 uppercase tracking-wide mb-2">
+      Avg Ice Time 
+    </p>
+    <p className="text-4xl font-extrabold text-emerald-700">{avgIceTime} min</p>
+  </div>
+
+  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center shadow-sm hover:shadow-md transition">
+    <p className="text-sm font-medium text-emerald-800 uppercase tracking-wide mb-2">
+      Avg # of Shifts
+    </p>
+    <p className="text-4xl font-extrabold text-emerald-700">{avgShifts}</p>
+  </div>
+</div>
+
+
 
     {/* avg shift length bar chart */}
     <div className="col-span-2 bg-white rounded-2xl shadow-md p-6 mt-6 border border-gray-200">
@@ -1001,7 +1224,9 @@ return (
 
 
 
-    
+    <h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-6">
+    Faceoffs
+    </h2>
 
     {/* face-offs */}
     <div className="bg-white rounded-2xl shadow-md p-6 mt-6 border border-gray-200">
