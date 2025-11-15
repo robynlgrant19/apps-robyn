@@ -15,6 +15,7 @@ export default function PlayerSignUp() {
   const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
 
+
 const handleSignUp = async (e) => {
   e.preventDefault();
   setErrorMessage("");
@@ -32,7 +33,6 @@ const handleSignUp = async (e) => {
       uid: user.uid,
       role: "player",
       createdAt: new Date(),
-      position,
     });
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {

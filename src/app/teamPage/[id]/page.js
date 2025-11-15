@@ -41,6 +41,11 @@ export default function TeamPage() {
   "Katie Porrello": "/playerPhotos/katieporrello.JPG", 
   "Caeli Reed": "/playerPhotos/caelireed.JPG", 
   "Morgan Cunningham": "/playerPhotos/morgancunningham.JPG",
+  "Adriana Dooley": "/playerPhotos/adrianadooley.JPG",
+  "Mylee Serkis": "/playerPhotos/myleeserkis.JPG",
+  "Teagan Wilson": "/playerPhotos/teaganwilson.JPG",
+  "Alanna Hoag": "/playerPhotos/alannahoag.JPG",
+  "Cera Luciani": "/playerPhotos/ceraluciani.JPG",
 
   };
   const defaultPhoto = "/defaultProfile.png";
