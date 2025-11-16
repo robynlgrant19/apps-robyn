@@ -113,19 +113,79 @@ export default function YearStats() {
 
 
       
-      const recordGames = querySnapshot.docs.map(d => d.data());
-      let wins = 0, losses = 0, ties = 0;
+    // Get all games
+const recordGames = querySnapshot.docs.map(d => d.data());
 
-      recordGames.forEach(g => {
-        const teamScore = Number(g.teamScore);
-        const opponentScore = Number(g.opponentScore);
-        if (teamScore > opponentScore) wins++;
-        else if (teamScore < opponentScore) losses++;
-        else if (teamScore === opponentScore) ties++;
-      });
+// Count record
+let wins = 0, losses = 0, ties = 0;
 
-      // Save record to state
-      setTeamStats(prev => ({ ...prev, wins, losses, ties }));
+recordGames.forEach(g => {
+  const teamScore = Number(g.teamScore);
+  const opponentScore = Number(g.opponentScore);
+  if (teamScore > opponentScore) wins++;
+  else if (teamScore < opponentScore) losses++;
+  else ties++;
+});
+
+// Number of games played
+const gamesPlayed = recordGames.length || 1;
+
+// ---- IMPORTANT: move cumulativeStats ABOVE averages ----
+const cumulativeStats = {
+  Points: 0, Goals: 0, Assists: 0, '+/-': 0,
+  FaceoffsWon: 0, Faceoffs: 0,
+  Shots: 0, ShotsOnGoal: 0, Hits: 0, BlockedShots: 0,
+  PowerPlayShots: 0, ShortHandedShots: 0, PenaltiesDrawn: 0
+};
+
+// ---- PROCESS ALL GAMES FIRST ----
+games.forEach(game => {
+  const stats = game.stats || [];
+
+  stats.forEach(stat => {
+    for (let key in cumulativeStats) {
+      const dbKey =
+        key === 'FaceoffsWon' ? 'Faceoffs won' :
+        key === 'ShotsOnGoal' ? 'Shots on goal' :
+        key === 'BlockedShots' ? 'Blocked shots' :
+        key === 'PowerPlayShots' ? 'Power play shots' :
+        key === 'ShortHandedShots' ? 'Short-handed shots' :
+        key === 'PenaltiesDrawn' ? 'Penalties drawn' :
+        key;
+
+      const val = stat[dbKey] === '-' ? 0 : Number(stat[dbKey] || 0);
+      cumulativeStats[key] += val;
+    }
+  });
+});
+
+// ---- NOW that totals are filled, compute averages ----
+const avgGoals = Number((cumulativeStats.Goals / gamesPlayed).toFixed(2));
+const avgShots = Number((cumulativeStats.Shots / gamesPlayed).toFixed(2));
+const avgShotsOnGoal = Number((cumulativeStats.ShotsOnGoal / gamesPlayed).toFixed(2));
+const avgHits = Number((cumulativeStats.Hits / gamesPlayed).toFixed(2));
+const avgBlockedShots = Number((cumulativeStats.BlockedShots / gamesPlayed).toFixed(2));
+const avgPowerPlayShots = Number((cumulativeStats.PowerPlayShots / gamesPlayed).toFixed(2));
+const avgPenaltiesDrawn = Number((cumulativeStats.PenaltiesDrawn / gamesPlayed).toFixed(2));
+
+
+// Save all stats together
+setTeamStats({
+  ...cumulativeStats,
+  wins,
+  losses,
+  ties,
+  recordGamesCount: gamesPlayed,
+  avgGoals,
+  avgShots,
+  avgShotsOnGoal,
+  avgHits,
+  avgBlockedShots, 
+  avgPowerPlayShots,
+  avgPenaltiesDrawn
+});
+
+
       
 
 
@@ -163,12 +223,7 @@ export default function YearStats() {
       setShotsPerGameData(gameShotsData);
       
 
-      const cumulativeStats = {
-        Points: 0, Goals: 0, Assists: 0, '+/-': 0,
-        FaceoffsWon: 0, Faceoffs: 0,
-        Shots: 0, ShotsOnGoal: 0, Hits: 0, BlockedShots: 0,
-        PowerPlayShots: 0, ShortHandedShots: 0, PenaltiesDrawn: 0
-      };
+      
 
       const playersMap = {};
 
@@ -406,6 +461,30 @@ setPlusMinusChartData(filteredForPlusMinus);
       pointHoverRadius: 6
     }]
   };
+
+  const OverviewCard = ({ title, value, color }) => {
+  const bg = {
+    emerald: "bg-emerald-50 border-emerald-200 text-emerald-700",
+    green: "bg-green-50 border-green-200 text-green-700",
+    lime: "bg-lime-50 border-lime-200 text-lime-700",
+    teal: "bg-teal-50 border-teal-200 text-teal-700",
+    gray: "bg-gray-50 border-gray-200 text-gray-700",
+  }[color];
+
+  return (
+    <div
+      className={`rounded-2xl p-6 text-center border ${bg} hover:shadow-md hover:-translate-y-1 transition-all duration-200`}
+    >
+      <p className="text-xs font-semibold uppercase tracking-wide mb-2 text-gray-600">
+        {title}
+      </p>
+      <p className={`text-4xl font-extrabold ${color === "gray" ? "text-gray-800" : ""}`}>
+        {value}
+      </p>
+    </div>
+  );
+};
+
   
   
   
@@ -449,45 +528,95 @@ setPlusMinusChartData(filteredForPlusMinus);
 </div>
 
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
-            <div className="bg-white rounded-2xl shadow-md p-6 space-y-4 border border-gray-200">
-        <h2 className="text-xl font-semibold text-gray-800">Cumulative Stats</h2>
-        <div className="flex justify-between border-b pb-2">
-        <span className="text-gray-600 font-medium">Record</span>
-        <span className={`font-semibold ${teamColors.text}`}>
-          {teamStats.wins ?? 0}-{teamStats.losses ?? 0}-{teamStats.ties ?? 0}
-        </span>
-      </div>
+           {/* === TEAM SEASON OVERVIEW (CLEAN REDESIGN) === */}
+<div className="bg-white rounded-3xl shadow-lg border border-gray-200 p-10 mb-12">
+
+  {/* Header */}
+  <div className="mb-12 text-center">
+    <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+      Season Overview
+    </h2>
+    <p className="text-gray-500 text-sm mt-1">
+      A complete snapshot of {teamSchool}'s performance this season
+    </p>
+  </div>
+
+  {/* ==== FIRST ROW ==== */}
+  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-6 mb-10">
+
+    {/* Record */}
+    <OverviewCard
+      title="Record"
+      value={`${teamStats.wins}-${teamStats.losses}-${teamStats.ties}`}
+      color="emerald"
+    />
+
+    {/* Goals */}
+    <OverviewCard
+      title="Goals / Game"
+      value={teamStats.avgGoals ?? 0}
+      color="emerald"
+    />
+
+    {/* Games Played */}
+    <OverviewCard
+      title="Games Played"
+      value={teamStats.recordGamesCount ?? 0}
+      color="teal"
+    />
+
+    <OverviewCard
+      title="Shots / Game"
+      value={teamStats.avgShots ?? 0}
+      color="gray"
+    />
+
+    <OverviewCard
+      title="SOG / Game"
+      value={teamStats.avgShotsOnGoal ?? 0}
+      color="gray"
+    />
+
+  </div>
+
+  {/* ==== SECOND ROW ==== */}
+  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+
+    <OverviewCard
+    title="PP Shots / Game"
+    value={teamStats.avgPowerPlayShots ?? 0}
+    color="emerald"
+  />
+
+  <OverviewCard
+    title="Penalties Drawn / Game"
+    value={teamStats.avgPenaltiesDrawn ?? 0}
+    color="teal"
+  />
+
+    <OverviewCard
+      title="Faceoff %"
+      value={teamFaceoffPercentage}
+      color="emerald"
+    />
+
+    <OverviewCard
+      title="Hits / Game"
+      value={teamStats.avgHits ?? 0}
+      color="green"
+    />
+
+    <OverviewCard
+      title="Blocks / Game"
+      value={teamStats.avgBlockedShots ?? 0}
+      color="lime"
+    />
+
+  </div>
+
+</div>
 
 
-        <div className="space-y-3">
-          <div className="flex justify-between border-b pb-2">
-            <span className="text-gray-600 font-medium">Points</span>
-            <span className="font-semibold text-gray-900">{teamStats.Points}</span>
-          </div>
-          <div className="flex justify-between border-b pb-2">
-            <span className="text-gray-600 font-medium">Goals</span>
-            <span className="font-semibold text-gray-900">{teamStats.Goals}</span>
-          </div>
-          <div className="flex justify-between border-b pb-2">
-            <span className="text-gray-600 font-medium">Assists</span>
-            <span className="font-semibold text-gray-900">{teamStats.Assists}</span>
-          </div>
-          <div className="flex justify-between border-b pb-2">
-            <span className="text-gray-600 font-medium">Plus/Minus</span>
-            <span className="font-semibold text-gray-900">{teamStats['+/-']}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600 font-medium">Shots</span>
-            <span className="font-semibold text-gray-900">{teamStats.Shots}</span>
-          </div>
-        </div>
-      </div>      
-        <div className="bg-white p-6 rounded-xl shadow">
-          <h2 className="text-xl font-semibold text-center mb-4">Shooting & Defense Radar</h2>
-          <Radar data={radarData} />
-        </div>
-      </div>
       
 
       
@@ -513,7 +642,10 @@ setPlusMinusChartData(filteredForPlusMinus);
         {teamLeaders.points.map((player, index) => (
           <tr
             key={index}
-            className={` ${teamColors.hoverBg} border-b border-gray-200 transition duration-150`}
+            className={`border-b border-gray-200 transition duration-150 hover:bg-gray-50 ${
+  teamColors.hoverBg || ""
+}`}
+
           >
             <td className="px-6 py-4 text-gray-800 font-medium">#{player.jersey ?? '--'}</td>
             <td className="px-6 py-4 text-gray-900 font-semibold">{player.name}</td>
@@ -632,6 +764,9 @@ setPlusMinusChartData(filteredForPlusMinus);
 </div>
 
 
+<h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-6">Around the Net</h2>
+
+
       <div className="bg-white p-6 rounded-xl shadow mb-12 text-center">
   <div className="flex justify-between items-center mb-4">
     <h2 className="text-xl font-semibold">Average Shots Per Game</h2>
@@ -702,10 +837,11 @@ setPlusMinusChartData(filteredForPlusMinus);
  </div>
  </div>
 
+{/*
  <div className="bg-white p-6 rounded-xl shadow mb-12 text-center mt-2">
         <h2 className="text-xl font-semibold mb-2">Faceoff %</h2>
         <p className={`text-3xl font-bold ${teamColors.text}`}>{teamFaceoffPercentage}</p>
-      </div>
+      </div> */}
 
 
 </div>

@@ -18,7 +18,6 @@ const TeamLeaders = ({ teamLeaders, teamColors = {} }) => {
     points: 'Points',
     goals: 'Goals',
     assists: 'Assists',
-    shots: 'Shots',
   };
 
   const leaders = teamLeaders[activeTab] || [];
