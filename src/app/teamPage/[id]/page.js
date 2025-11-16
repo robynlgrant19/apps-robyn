@@ -432,55 +432,45 @@ export default function TeamPage() {
 
                 return (
                   <Link key={game.id} href={`/gameProfiles/${game.id}`}>
-                    <div className="bg-white flex items-center justify-between rounded-xl shadow-sm border border-gray-200 p-4 transition hover:shadow-md hover:bg-gray-100 cursor-pointer">
-                      {/* LEFT: Opponent Logo + Date */}
-                      <div className="flex items-center w-1/3">
-                        <img
-                          src={logoPath}
-                          alt={`${game.opponent} logo`}
-                          onError={(e) =>
-                            (e.currentTarget.src = "/teamLogos/default.jpg")
-                          }
-                          className="w-12 h-12 sm:w-14 sm:h-14 object-contain mr-3"
-                        />
-                        <div>
-                          <p className="text-sm text-gray-500">
-                            {new Date(
-                              game.gameDate
-                            ).toLocaleDateString("en-US", {
-                              weekday: "short",
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {new Date(game.gameDate).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                        </div>
-                      </div>
+  <div className="bg-white flex items-center justify-between rounded-xl shadow-sm border border-gray-200 p-4 transition hover:shadow-md hover:bg-gray-100 cursor-pointer">
+    {/* LEFT: Opponent Logo + Date */}
+    <div className="flex items-center w-1/3">
+      <img
+        src={logoPath}
+        alt={`${game.opponent} logo`}
+        onError={(e) => (e.currentTarget.src = "/teamLogos/default.jpg")}
+        className="w-12 h-12 sm:w-14 sm:h-14 object-contain mr-3"
+      />
+      <div>
+        {/* ❗ FIXED DATE — now timezone safe */}
+        <p className="text-sm text-gray-500">
+          {new Date(game.gameDate + "T00:00:00").toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          })}
+        </p>
+        
+      </div>
+    </div>
 
-                      {/* CENTER: Opponent Info */}
-                      <div className="flex-1 text-center">
-                        <h3 className="text-lg font-semibold text-gray-800">
-                          {game.location === "Away" ? "@" : "vs"}{" "}
-                          {game.opponent}
-                        </h3>
-                      </div>
+    {/* CENTER: Opponent Info */}
+    <div className="flex-1 text-center">
+      <h3 className="text-lg font-semibold text-gray-800">
+        {game.location === "Away" ? "@" : "vs"} {game.opponent}
+      </h3>
+    </div>
 
-                      {/* RIGHT: Result */}
-                      <div className="text-right w-1/4">
-                        <p
-                          className={`font-impact text-lg sm:text-xl ${resultColor}`}
-                        >
-                          <span className="font-bold mr-1">{resultLabel}</span>
-                          {game.teamScore}-{game.opponentScore}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
+    {/* RIGHT: Result */}
+    <div className="text-right w-1/4">
+      <p className={`font-impact text-lg sm:text-xl ${resultColor}`}>
+        <span className="font-bold mr-1">{resultLabel}</span>
+        {game.teamScore}-{game.opponentScore}
+      </p>
+    </div>
+  </div>
+</Link>
+
                 );
               })}
             </div>

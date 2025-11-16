@@ -233,8 +233,7 @@ useEffect(() => {
           playersMap[name].assists += assists;
           playersMap[name].shots += shots;
           playersMap[name].points = playersMap[name].goals + playersMap[name].assists;
-
-
+          
         });
   
         const calculatedFaceoffPct =

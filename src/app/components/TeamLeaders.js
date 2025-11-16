@@ -69,7 +69,7 @@ const TeamLeaders = ({ teamLeaders, teamColors = {} }) => {
         {topPlayer ? (
           <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-300 flex flex-col justify-between items-center hover:shadow-2xl transition-all duration-300">
             <img
-              src={`/playerPhotos/${topPlayer.name.replace(/\s+/g, '').toLowerCase()}.jpg`}
+              src={`/playerPhotos/${topPlayer.name.replace(/\s+/g, '').toLowerCase()}.JPG`}
               alt={`${topPlayer.name} profile`}
               onError={(e) => (e.currentTarget.src = "/playerPhotos/defaultProfile.png")}
               className="w-32 h-32 object-cover rounded-full border-4 border-gray-200 shadow-md mb-4"
