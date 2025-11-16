@@ -32,6 +32,8 @@ export default function PlayerProfile() {
   const router = useRouter();
   const [selectedGameIndex, setSelectedGameIndex] = useState(0);
   const [teamColors, setTeamColors] = useState(null);
+  
+  
   const hockeySayings = [
     'Sharpening skates...',
     'Taping sticks...',
@@ -187,6 +189,7 @@ useEffect(() => {
 
             
             
+            
             gameStats.push({ 
               game: gameData.opponent, 
               opponent: gameData.opponent,
@@ -202,9 +205,13 @@ useEffect(() => {
               shiftLength: averageShiftLength,
               faceoffs: stat.Faceoffs === '-' ? 0 : Number(stat.Faceoffs || 0),
               faceoffsWon: stat['Faceoffs won'] === '-' ? 0 : Number(stat['Faceoffs won'] || 0),
+              
             });
           });
         });
+
+        const goalPercentage = totalShots > 0 ? ((totalGoals / totalShots) * 100).toFixed(1) : 0;
+
         
         
 
@@ -224,6 +231,7 @@ useEffect(() => {
           PenaltiesDrawn: totalPenaltiesDrawn,
           PenaltyTime: totalPenaltyTime,
           GamesPlayed: gamesPlayed,
+          GoalPercentage: goalPercentage,
         });
         setGamesStats(gameStats);
         setTimeout(() => {
@@ -686,37 +694,52 @@ const imagePath = manualPhoto || fallbackPhoto || defaultPhoto;
     </div>
 
     {/* Second Row */}
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8">
-      {/* Shots */}
-      <div className="bg-gray-100 border border-gray-200 rounded-2xl p-8 text-center hover:shadow-md hover:-translate-y-1 transition">
-        <p className="text-sm font-medium text-gray-700 uppercase tracking-wide mb-2">
-          Shots on Goal
-        </p>
-        <p className="text-5xl font-extrabold text-gray-800">
-          {cumulativeStats?.ShotsOnGoal ?? 0}
-        </p>
-      </div>
+    {/* Second Row */}
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+  {/* Shots on Goal */}
+  <div className="bg-gray-100 border border-gray-200 rounded-2xl p-8 text-center hover:shadow-md hover:-translate-y-1 transition">
+    <p className="text-sm font-medium text-gray-700 uppercase tracking-wide mb-2">
+      Shots on Goal
+    </p>
+    <p className="text-5xl font-extrabold text-gray-800">
+      {cumulativeStats?.ShotsOnGoal ?? 0}
+    </p>
+  </div>
 
-      {/* Hits */}
-      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center hover:shadow-md hover:-translate-y-1 transition">
-        <p className="text-sm font-medium text-emerald-700 uppercase tracking-wide mb-2">
-          Hits
-        </p>
-        <p className="text-5xl font-extrabold text-emerald-700">
-          {cumulativeStats?.Hits ?? 0}
-        </p>
-      </div>
+  {/* Hits */}
+  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center hover:shadow-md hover:-translate-y-1 transition">
+    <p className="text-sm font-medium text-emerald-700 uppercase tracking-wide mb-2">
+      Hits
+    </p>
+    <p className="text-5xl font-extrabold text-emerald-700">
+      {cumulativeStats?.Hits ?? 0}
+    </p>
+  </div>
 
-      {/* Blocked Shots */}
-      <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center hover:shadow-md hover:-translate-y-1 transition">
-        <p className="text-sm font-medium text-green-700 uppercase tracking-wide mb-2">
-          Blocked Shots
-        </p>
-        <p className="text-5xl font-extrabold text-green-700">
-          {cumulativeStats?.BlockedShots ?? 0}
-        </p>
-      </div>
-    </div>
+  {/* Blocked Shots */}
+  <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center hover:shadow-md hover:-translate-y-1 transition">
+    <p className="text-sm font-medium text-green-700 uppercase tracking-wide mb-2">
+      Blocked Shots
+    </p>
+    <p className="text-5xl font-extrabold text-green-700">
+      {cumulativeStats?.BlockedShots ?? 0}
+    </p>
+  </div>
+
+  {/* Goal Percentage */}
+  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 text-center hover:shadow-md hover:-translate-y-1 transition">
+    <p className="text-sm font-medium text-emerald-700 uppercase tracking-wide mb-2">
+      Goal %
+    </p>
+    <p className="text-5xl font-extrabold text-emerald-700">
+      {cumulativeStats?.GoalPercentage ?? 0}%
+    </p>
+    <p className="text-xs text-gray-500 mt-2">
+      {cumulativeStats.Goals} goals on {cumulativeStats.Shots} shots
+    </p>
+  </div>
+</div>
+
   </div>
 </div>
 
@@ -735,6 +758,75 @@ const imagePath = manualPhoto || fallbackPhoto || defaultPhoto;
         <h2 className="text-xl font-semibold">Shots vs Shots on Goal per Game</h2>
         <Bar data={barDataForShots} options={barOptionsForShots} />
       </div>
+
+      {/* Goal Efficiency Section */}
+<div className="bg-white rounded-2xl shadow-md p-6 mt-6">
+  <h2 className="text-xl font-semibold mb-4">Goal Efficiency (Goal %)</h2>
+
+  <div className="flex flex-col lg:flex-row gap-8 items-center justify-center">
+
+    {/* LEFT: Donut Gauge */}
+    <div className="w-52 h-52 relative">
+      <Pie
+        data={{
+          labels: ['Goals', 'Misses'],
+          datasets: [
+            {
+              data: [
+                cumulativeStats.Goals,
+                Math.max(cumulativeStats.Shots - cumulativeStats.Goals, 0),
+              ],
+              backgroundColor: [
+                'rgba(16, 185, 129, 0.9)', // emerald
+                'rgba(229, 231, 235, 0.6)', // light gray
+              ],
+              borderWidth: 0,
+              cutout: '70%', // donut gauge style
+            },
+          ],
+        }}
+        options={{
+          plugins: {
+            legend: { display: false },
+          },
+          maintainAspectRatio: false,
+        }}
+      />
+
+      {/* CENTER VALUE */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <p className="text-3xl font-extrabold text-emerald-700">
+          {cumulativeStats.GoalPercentage}%
+        </p>
+        <p className="text-xs text-gray-500 uppercase tracking-wide">
+          Goal Rate
+        </p>
+      </div>
+    </div>
+
+    {/* RIGHT: Stats Summary */}
+    <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+      <p className="text-5xl font-extrabold text-emerald-700 mb-2">
+        {cumulativeStats.GoalPercentage}%
+      </p>
+      <p className="text-gray-600 text-lg font-medium">
+        Shooting Efficiency
+      </p>
+      <p className="text-gray-500 mt-2">
+        {cumulativeStats.Goals} goals on {cumulativeStats.Shots} shots
+      </p>
+
+      {/* Mini stat bar */}
+      <div className="w-full bg-gray-200 rounded-full h-3 mt-4 overflow-hidden">
+        <div
+          className="h-3 rounded-full bg-emerald-600 transition-all duration-500"
+          style={{ width: `${cumulativeStats.GoalPercentage}%` }}
+        ></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
       <h2 className="text-2xl font-extrabold text-black mb-8 tracking-tight border-b border-gray-700 pb-2 mt-6">
     Ice Time
