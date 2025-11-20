@@ -737,28 +737,39 @@ return (
 <div className="max-w-5xl mx-auto mt-20">
 {gameInfo && (
   <div className="bg-white border-l-8 border-emerald-800 rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10">
-    <div className="flex items-center justify-between mb-2">
-      {/* LEFT: Opponent Logo + Name */}
-      <div className="flex items-center gap-4">
-        
+    <div className="flex items-center justify-center mb-4 gap-8">
 
-        {/* Opponent Info */}
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
-          {gameInfo.location === 'Away' ? '@' : 'vs'} {gameInfo.opponent}
-        </h2>
-        <img
-          src={`/teamLogos/${gameInfo.opponent?.toLowerCase().replace(/\s+/g, '')}.jpg`}
-          alt={`${gameInfo.opponent} logo`}
-          onError={(e) => (e.currentTarget.src = '/teamLogos/default.jpg')}
-          className="w-14 h-14 sm:w-16 sm:h-16 object-contain"
-        />
-      </div>
+  {/* HOME TEAM */}
+  <div className="flex flex-col items-center">
+    <img
+      src="/teamLogos/plymouthstate.jpg" 
+      alt="Home Team Logo"
+      onError={(e) => (e.currentTarget.src = '/teamLogos/default.jpg')}
+      className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
+    />
+    <p className="text-3xl sm:text-4xl font-bold text-emerald-800 mt-2">
+      {gameInfo.teamScore}
+    </p>
+  </div>
 
-      {/* RIGHT: Score */}
-      <p className="text-3xl sm:text-4xl font-impact text-emerald-800">
-        {gameInfo.teamScore} - {gameInfo.opponentScore}
-      </p>
-    </div>
+  {/* DASH */}
+  <p className="text-4xl sm:text-5xl font-extrabold text-gray-700">-</p>
+
+  {/* OPPONENT */}
+  <div className="flex flex-col items-center">
+    <img
+      src={`/teamLogos/${gameInfo.opponent?.toLowerCase().replace(/\s+/g, '')}.jpg`}
+      alt={`${gameInfo.opponent} logo`}
+      onError={(e) => (e.currentTarget.src = '/teamLogos/default.jpg')}
+      className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
+    />
+    <p className="text-3xl sm:text-4xl font-bold text-emerald-800 mt-2">
+      {gameInfo.opponentScore}
+    </p>
+  </div>
+
+</div>
+
 
     {/* Optional: Game Date (uncomment if desired) */}
     {/* <p className="text-gray-600 text-md mt-2">{gameInfo.gameDate}</p> */}
@@ -779,15 +790,16 @@ return (
   <div className="bg-gradient-to-b from-gray-50 to-white rounded-3xl shadow-md border border-gray-200 p-10">
     {/* Header */}
     <div className="mb-10 text-center">
-      <h2 className="text-3xl font-extrabold text-gray-900 mb-2 tracking-tight">
-        {gameInfo?.opponent}
-      </h2>
-      <p className="text-gray-500 text-sm flex flex-col sm:flex-row items-center justify-center gap-2">
-        <span>{gameInfo?.location}</span>
-        <span>•</span>
-        <span>{gameInfo?.gameDate}</span>
-      </p>
-    </div>
+  <h2 className="text-3xl font-extrabold text-gray-900 mb-2 tracking-tight">
+    {gameInfo?.location === "Home" ? "vs" : "@"} {gameInfo?.opponent}
+  </h2>
+  <p className="text-gray-500 text-sm flex flex-col sm:flex-row items-center justify-center gap-2">
+    <span>{gameInfo?.location}</span>
+    <span>•</span>
+    <span>{gameInfo?.gameDate}</span>
+  </p>
+</div>
+
 
     {/* Stats Grid */}
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
