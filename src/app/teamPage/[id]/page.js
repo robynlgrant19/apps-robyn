@@ -10,6 +10,8 @@ import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler,
 //import AuthDetails from "../../components/auth/authDetails";
 import CalendarView from "../../components/calendarView";
 import { teamColorClasses } from "../../teamColors";
+import LineCombinations from "../../components/lineCombos";
+
 
 
 
@@ -299,6 +301,7 @@ export default function TeamPage() {
     { key: "home", label: "Home" },
     { key: "addGame", label: "Add Game" },
     { key: "yearOverview", label: "Year Overview" },
+    { key: "lineCombinations", label: "Line Combinations" },
   ].map((tab) => (
     <button
       key={tab.key}
@@ -545,6 +548,12 @@ export default function TeamPage() {
   </div>
 )}
 
+{activeTab === "lineCombinations" && (
+  <LineCombinations players={players} teamColors={teamColors} teamId={id} />
+)}
+
+
+
   
             {/* Upload Game Modal */}
             {isModalOpen && (
@@ -720,8 +729,6 @@ export default function TeamPage() {
     })}
   </div>
 );
-
-
 
   }
   
