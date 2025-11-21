@@ -20,9 +20,9 @@ import { db } from "../firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 
 /* ---------------------------------------------------------
-      PLAYER CARD (draggable)
+      PLAYER CARD (draggable, Apple-style)
 ---------------------------------------------------------- */
-function PlayerCard({ id, player }) {
+function PlayerCard({ id, player, size = "canvas" }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id });
 
@@ -34,31 +34,118 @@ function PlayerCard({ id, player }) {
 
   if (!player) return null;
 
+  const fallbackPhoto =
+    `/playerPhotos/${player.firstName}${player.lastName}`.toLowerCase() + ".jpg";
+  const defaultPhoto = "/playerPhotos/defaultProfile.png";
+  const imagePath = player.photo || fallbackPhoto;
+
+  /* Size presets */
+  const isSidebar = size === "sidebar";
+
+  const picSize = isSidebar ? "w-8 h-8" : "w-12 h-12";
+  const textSize = isSidebar ? "text-[11px]" : "text-[13px]";
+  const cardPadding = isSidebar ? "px-2 py-1.5" : "px-3 py-2";
+  const shadowStyle = isSidebar ? "shadow-none" : "shadow-sm hover:shadow-md";
+  const gapSize = isSidebar ? "gap-2" : "gap-3";
+
   return (
     <div
       ref={setNodeRef}
       {...attributes}
       {...listeners}
       style={style}
-      className="px-3 py-2 text-center bg-white rounded-md border shadow-sm cursor-grab select-none hover:bg-gray-50 text-xs"
+      className={`
+        relative
+        ${cardPadding}
+        bg-white 
+        rounded-xl 
+        border border-gray-200 
+        ${shadowStyle}
+        cursor-grab 
+        select-none 
+        hover:bg-gray-50 
+        active:scale-[0.98]
+        transition-all 
+        duration-150 
+        flex 
+        items-center 
+        ${gapSize}
+      `}
     >
-      {player.firstName} {player.lastName}
+      {/* Jersey number badge — N3: transparent, thin border, minimal */}
+      {!isSidebar && (
+        <div
+          className="
+            absolute 
+            -top-1.5 
+            -right-1.5 
+            w-6 h-6 
+            rounded-full
+            border border-gray-300
+            text-gray-700 
+            text-[10px]
+            font-semibold
+            flex items-center justify-center
+            bg-transparent
+            backdrop-blur-sm
+          "
+        >
+          {player.jerseyNumber || "–"}
+        </div>
+      )}
+
+      {/* Profile Picture */}
+      <div
+        className={`rounded-full overflow-hidden bg-gray-200 flex items-center justify-center shrink-0 ${picSize}`}
+      >
+        <img
+          src={imagePath}
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = defaultPhoto;
+          }}
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      {/* Name */}
+      <div className="flex flex-col min-w-0">
+        <span
+          className={`font-semibold text-gray-900 truncate ${textSize}`}
+        >
+          {player.firstName} {player.lastName}
+        </span>
+      </div>
     </div>
   );
 }
 
+
+
+
+
 /* ---------------------------------------------------------
       PLACEHOLDER SLOT (empty slot)
 ---------------------------------------------------------- */
-function Placeholder({ id, label }) {
+function Placeholder({ id }) {
   const { setNodeRef } = useSortable({ id });
 
+  // Label is in the parent context; we just render a clean empty slot
   return (
     <div
       ref={setNodeRef}
-      className="px-3 py-2 text-center bg-gray-100 text-gray-500 border border-dashed rounded-md text-[10px] min-w-[65px] select-none"
+      className="
+        px-4 py-3 
+        bg-slate-50 
+        text-[10px] 
+        text-gray-400 
+        rounded-xl 
+        border border-dashed border-gray-300 
+        flex items-center justify-center 
+        min-w-[80px]
+      "
     >
-      {label}
+      Empty
     </div>
   );
 }
@@ -93,6 +180,40 @@ function debounce(fn, delay) {
   };
 }
 
+/* Small UI wrappers for clean layout */
+function SidebarSection({ title, children }) {
+  return (
+    <div className="mb-4">
+      <h3 className="font-semibold text-[11px] text-gray-600 mb-2 uppercase tracking-wide">
+        {title}
+      </h3>
+      <div className="bg-white border border-gray-200 rounded-2xl p-3 flex flex-col gap-2">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function LineGroup({ title, children }) {
+  return (
+    <div
+      className="
+        bg-white 
+        border border-gray-200 
+        rounded-2xl 
+        shadow-sm 
+        px-4 py-3 
+        flex flex-col gap-2
+      "
+    >
+      <div className="text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wide">
+        {title}
+      </div>
+      <div className="flex items-center gap-3">{children}</div>
+    </div>
+  );
+}
+
 /* ---------------------------------------------------------
       MAIN COMPONENT
 ---------------------------------------------------------- */
@@ -111,6 +232,27 @@ export default function LineCombinations({ players, teamColors, teamId }) {
   const defense = players.filter((p) =>
     p.position?.toUpperCase().startsWith("D")
   );
+
+  const allPlayers = players;
+
+  const resetLines = () => {
+  const emptyLines = {
+    unit1: { LW: null, C: null, RW: null, LD: null, RD: null },
+    unit2: { LW: null, C: null, RW: null, LD: null, RD: null },
+    unit3: { LW: null, C: null, RW: null, LD: null, RD: null },
+    unit4: { LW: null, C: null, RW: null, LD: null, RD: null },
+    unit5: { LW: null, C: null, RW: null, LD: null, RD: null },
+  };
+
+  const clearedAvailable = players.map((p) => p.id);
+
+  setLines(emptyLines);
+  setAvailablePlayers(clearedAvailable);
+
+  // Save reset to Firestore
+  saveLines(emptyLines, clearedAvailable);
+};
+
 
   /* ---------------------------------------------------------
           Setup slot IDs
@@ -182,6 +324,7 @@ export default function LineCombinations({ players, teamColors, teamId }) {
 
   const saveForwards = useCallback(
     debounce((state) => {
+      if (!teamId) return;
       updateDoc(doc(db, "teams", teamId), { savedForwardLines: state });
     }, 200),
     []
@@ -189,6 +332,7 @@ export default function LineCombinations({ players, teamColors, teamId }) {
 
   const saveDefensePairs = useCallback(
     debounce((state) => {
+      if (!teamId) return;
       updateDoc(doc(db, "teams", teamId), { savedDefensePairs: state });
     }, 200),
     []
@@ -196,6 +340,7 @@ export default function LineCombinations({ players, teamColors, teamId }) {
 
   const saveUnits = useCallback(
     debounce((state) => {
+      if (!teamId) return;
       updateDoc(doc(db, "teams", teamId), { savedUnits: state });
     }, 200),
     []
@@ -203,15 +348,15 @@ export default function LineCombinations({ players, teamColors, teamId }) {
 
   useEffect(() => {
     if (forwardState && teamId) saveForwards(forwardState);
-  }, [forwardState]);
+  }, [forwardState, teamId]);
 
   useEffect(() => {
     if (defenseState && teamId) saveDefensePairs(defenseState);
-  }, [defenseState]);
+  }, [defenseState, teamId]);
 
   useEffect(() => {
     if (unitState && teamId) saveUnits(unitState);
-  }, [unitState]);
+  }, [unitState, teamId]);
 
   /* ---------------------------------------------------------
           DRAG LOGIC
@@ -224,7 +369,6 @@ export default function LineCombinations({ players, teamColors, teamId }) {
     const toId = over.id;
     if (fromId === toId) return;
 
-    // ACTIVE mode determines which state object to use
     if (mode === "forwards") {
       setForwardState((prev) => moveItem(prev, fromId, toId, "F"));
     } else if (mode === "defense") {
@@ -248,22 +392,21 @@ export default function LineCombinations({ players, teamColors, teamId }) {
 
     if (!from || !to) return state;
 
-    // enforce F/D rules
     const isForward = type === "F";
-    if (isForward && !to.includes("line") && to !== "available") return state;
-    if (!isForward && !to.includes("pair") && to !== "available") return state;
 
-    // Can't drop onto filled slot
+    // Enforce destination type (lines for F, pairs for D, or available)
+    if (isForward && to !== "available" && !to.startsWith("line")) return state;
+    if (!isForward && to !== "available" && !to.startsWith("pair")) return state;
+
+    // Can't drop on a filled slot (non-available)
     if (to !== "available" && newState[to].length >= 1) {
       return state;
     }
 
-    // Remove from source
     const fromArr = [...newState[from]];
     const idx = fromArr.indexOf(fromId);
     if (idx !== -1) fromArr.splice(idx, 1);
 
-    // Add to destination
     const toArr = [...newState[to]];
     if (!toArr.includes(fromId)) toArr.push(fromId);
 
@@ -289,15 +432,21 @@ export default function LineCombinations({ players, teamColors, teamId }) {
     const isDefenseP = defense.some((p) => p.id === fromId);
 
     const toIsForward =
-      to === "availableForwards" || (to.includes("F-") && to.startsWith("unit"));
+      to === "availableForwards" || (to.startsWith("unit") && to.includes("F-"));
     const toIsDefense =
-      to === "availableDefense" || (to.includes("D-") && to.startsWith("unit"));
+      to === "availableDefense" || (to.startsWith("unit") && to.includes("D-"));
 
+    // Enforce F vs D separation
     if (isForward && !toIsForward) return state;
     if (isDefenseP && !toIsDefense) return state;
 
-    if (to !== "availableForwards" && to !== "availableDefense") {
-      if (newState[to].length >= 1) return state;
+    // Only 1 per slot (non-available pools)
+    if (
+      to !== "availableForwards" &&
+      to !== "availableDefense" &&
+      newState[to].length >= 1
+    ) {
+      return state;
     }
 
     const fromArr = [...newState[from]];
@@ -314,228 +463,248 @@ export default function LineCombinations({ players, teamColors, teamId }) {
   }
 
   /* ---------------------------------------------------------
-          RENDER FORWARD LINES
+          SIDEBAR RENDERERS
   ---------------------------------------------------------- */
-  const renderForwards = () => {
+
+  const renderSidebarForwards = () => {
+    if (!forwardState) return null;
+    const state = forwardState;
+
+    return (
+      <SidebarSection title="Available Forwards">
+        <SortableContext
+          id="available"
+          items={
+            state.available.length > 0
+              ? state.available
+              : ["placeholder-available"]
+          }
+          strategy={horizontalListSortingStrategy}
+        >
+          {state.available.length === 0 ? (
+            <Placeholder id="placeholder-available" />
+          ) : (
+            state.available.map((id) => (
+              <PlayerCard
+                key={id}
+                id={id}
+                player={forwards.find((p) => p.id === id)}
+                size = "sidebar"
+              />
+            ))
+          )}
+        </SortableContext>
+      </SidebarSection>
+    );
+  };
+
+  const renderSidebarDefense = () => {
+    if (!defenseState) return null;
+    const state = defenseState;
+
+    return (
+      <SidebarSection title="Available Defense">
+        <SortableContext
+          id="available"
+          items={
+            state.available.length > 0
+              ? state.available
+              : ["placeholder-available"]
+          }
+          strategy={horizontalListSortingStrategy}
+        >
+          {state.available.length === 0 ? (
+            <Placeholder id="placeholder-available" />
+          ) : (
+            state.available.map((id) => (
+              <PlayerCard
+                key={id}
+                id={id}
+                player={defense.find((p) => p.id === id)}
+                size = "sidebar"
+              />
+            ))
+          )}
+        </SortableContext>
+      </SidebarSection>
+    );
+  };
+
+  const renderSidebarUnits = () => {
+  if (!unitState) return null;
+  const state = unitState;
+
+  return (
+    <>
+      <SidebarSection title="Available Forwards">
+        <SortableContext
+          id="availableForwards"
+          items={
+            state.availableForwards.length > 0
+              ? state.availableForwards
+              : ["placeholder-availableForwards"]
+          }
+          strategy={horizontalListSortingStrategy}
+        >
+          {state.availableForwards.length === 0 ? (
+            <Placeholder id="placeholder-availableForwards" />
+          ) : (
+            state.availableForwards.map((id) => (
+              <PlayerCard
+                key={id}
+                id={id}
+                player={forwards.find((p) => p.id === id)}
+                size="sidebar"
+              />
+            ))
+          )}
+        </SortableContext>
+      </SidebarSection>
+
+      <SidebarSection title="Available Defense">
+  <SortableContext
+    id="availableDefense"
+    items={
+      state.availableDefense.length > 0
+        ? state.availableDefense
+        : ["placeholder-availableDefense"]
+    }
+    strategy={horizontalListSortingStrategy}
+  >
+    {state.availableDefense.length === 0 ? (
+      <Placeholder id="placeholder-availableDefense" />
+    ) : (
+      state.availableDefense.map((id) => (
+        <PlayerCard
+          key={id}
+          id={id}
+          player={defense.find((p) => p.id === id)}
+          size="sidebar"     // ✅ FIXED
+        />
+      ))
+    )}
+  </SortableContext>
+</SidebarSection>
+
+
+    </>
+  );
+};
+
+
+  /* ---------------------------------------------------------
+          MAIN PANEL RENDERERS
+  ---------------------------------------------------------- */
+
+  const renderMainForwards = () => {
     if (!forwardState) return null;
     const state = forwardState;
     const lines = [1, 2, 3, 4, 5];
 
     return (
-      <>
-        {/* Available */}
-        <Section title="Available Forwards">
-          <SortableContext
-            id="available"
-            items={
-              state.available.length > 0
-                ? state.available
-                : ["placeholder-available"]
-            }
-            strategy={horizontalListSortingStrategy}
-          >
-            {state.available.length === 0 ? (
-              <Placeholder
-                id="placeholder-available"
-                label="No forwards (drag from lines)"
-              />
-            ) : (
-              state.available.map((id) => (
-                <PlayerCard
-                  key={id}
-                  id={id}
-                  player={forwards.find((p) => p.id === id)}
-                />
-              ))
-            )}
-          </SortableContext>
-        </Section>
-
-        {/* lines */}
+      <div className="space-y-4">
         {lines.map((n) => {
           const lw = `line${n}-LW`;
           const c = `line${n}-C`;
           const rw = `line${n}-RW`;
 
           return (
-            <Row key={n} title={`Line ${n} (LW / C / RW)`}>
+            <LineGroup key={n} title={`Line ${n}`}>
               {[lw, c, rw].map((slotId) => {
                 const ids = state[slotId] || [];
                 const items = ids.length > 0 ? ids : [`placeholder-${slotId}`];
                 const role = getRoleFromSlotId(slotId);
 
                 return (
-                  <SortableContext
-                    key={slotId}
-                    id={slotId}
-                    items={items}
-                    strategy={horizontalListSortingStrategy}
-                  >
-                    {items.map((id) =>
-                      id.startsWith("placeholder-") ? (
-                        <Placeholder key={id} id={id} label={`${role} Slot`} />
-                      ) : (
-                        <PlayerCard
-                          key={id}
-                          id={id}
-                          player={forwards.find((p) => p.id === id)}
-                        />
-                      )
-                    )}
-                  </SortableContext>
+                  <div className="flex flex-col items-center gap-1" key={slotId}>
+                    <span className="text-[10px] uppercase tracking-wide text-gray-400">
+                      {role}
+                    </span>
+                    <SortableContext
+                      id={slotId}
+                      items={items}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {items.map((id) =>
+                        id.startsWith("placeholder-") ? (
+                          <Placeholder key={id} id={id} />
+                        ) : (
+                          <PlayerCard
+                            key={id}
+                            id={id}
+                            player={forwards.find((p) => p.id === id)}
+                            size = "canvas"
+                          />
+                        )
+                      )}
+                    </SortableContext>
+                  </div>
                 );
               })}
-            </Row>
+            </LineGroup>
           );
         })}
-      </>
+      </div>
     );
   };
 
-  /* ---------------------------------------------------------
-          RENDER DEFENSE PAIRS
-  ---------------------------------------------------------- */
-  const renderDefense = () => {
+  const renderMainDefense = () => {
     if (!defenseState) return null;
     const state = defenseState;
     const pairs = [1, 2, 3, 4, 5];
 
     return (
-      <>
-        <Section title="Available Defense">
-          <SortableContext
-            id="available"
-            items={
-              state.available.length > 0
-                ? state.available
-                : ["placeholder-available"]
-            }
-            strategy={horizontalListSortingStrategy}
-          >
-            {state.available.length === 0 ? (
-              <Placeholder
-                id="placeholder-available"
-                label="No defense (drag from pairs)"
-              />
-            ) : (
-              state.available.map((id) => (
-                <PlayerCard
-                  key={id}
-                  id={id}
-                  player={defense.find((p) => p.id === id)}
-                />
-              ))
-            )}
-          </SortableContext>
-        </Section>
-
+      <div className="space-y-4">
         {pairs.map((n) => {
           const ld = `pair${n}-LD`;
           const rd = `pair${n}-RD`;
 
           return (
-            <Row key={n} title={`Pair ${n} (LD / RD)`}>
+            <LineGroup key={n} title={`Pair ${n}`}>
               {[ld, rd].map((slotId) => {
                 const ids = state[slotId] || [];
                 const items = ids.length > 0 ? ids : [`placeholder-${slotId}`];
                 const role = getRoleFromSlotId(slotId);
 
                 return (
-                  <SortableContext
-                    key={slotId}
-                    id={slotId}
-                    items={items}
-                    strategy={horizontalListSortingStrategy}
-                  >
-                    {items.map((id) =>
-                      id.startsWith("placeholder-") ? (
-                        <Placeholder key={id} id={id} label={`${role} Slot`} />
-                      ) : (
-                        <PlayerCard
-                          key={id}
-                          id={id}
-                          player={defense.find((p) => p.id === id)}
-                        />
-                      )
-                    )}
-                  </SortableContext>
+                  <div className="flex flex-col items-center gap-1" key={slotId}>
+                    <span className="text-[10px] uppercase tracking-wide text-gray-400">
+                      {role}
+                    </span>
+                    <SortableContext
+                      id={slotId}
+                      items={items}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {items.map((id) =>
+                        id.startsWith("placeholder-") ? (
+                          <Placeholder key={id} id={id} />
+                        ) : (
+                          <PlayerCard
+                            key={id}
+                            id={id}
+                            player={defense.find((p) => p.id === id)}
+                          />
+                        )
+                      )}
+                    </SortableContext>
+                  </div>
                 );
               })}
-            </Row>
+            </LineGroup>
           );
         })}
-      </>
+      </div>
     );
   };
 
-  /* ---------------------------------------------------------
-          RENDER UNITS (5 player units)
-  ---------------------------------------------------------- */
-  const renderUnits = () => {
+  const renderMainUnits = () => {
     if (!unitState) return null;
     const state = unitState;
     const units = [1, 2, 3, 4, 5];
 
     return (
-      <>
-        {/* Available forwards + defense */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <Section title="Available Forwards">
-            <SortableContext
-              id="availableForwards"
-              items={
-                state.availableForwards.length > 0
-                  ? state.availableForwards
-                  : ["placeholder-availableForwards"]
-              }
-              strategy={horizontalListSortingStrategy}
-            >
-              {state.availableForwards.length === 0 ? (
-                <Placeholder
-                  id="placeholder-availableForwards"
-                  label="No forwards"
-                />
-              ) : (
-                state.availableForwards.map((id) => (
-                  <PlayerCard
-                    key={id}
-                    id={id}
-                    player={forwards.find((p) => p.id === id)}
-                  />
-                ))
-              )}
-            </SortableContext>
-          </Section>
-
-          <Section title="Available Defense">
-            <SortableContext
-              id="availableDefense"
-              items={
-                state.availableDefense.length > 0
-                  ? state.availableDefense
-                  : ["placeholder-availableDefense"]
-              }
-              strategy={horizontalListSortingStrategy}
-            >
-              {state.availableDefense.length === 0 ? (
-                <Placeholder
-                  id="placeholder-availableDefense"
-                  label="No defense"
-                />
-              ) : (
-                state.availableDefense.map((id) => (
-                  <PlayerCard
-                    key={id}
-                    id={id}
-                    player={defense.find((p) => p.id === id)}
-                  />
-                ))
-              )}
-            </SortableContext>
-          </Section>
-        </div>
-
-        {/* Units */}
+      <div className="space-y-4">
         {units.map((n) => {
           const fSlots = [
             `unit${n}F-LW`,
@@ -547,125 +716,146 @@ export default function LineCombinations({ players, teamColors, teamId }) {
           return (
             <div
               key={n}
-              className="bg-gray-50 border rounded-lg p-3 flex flex-col gap-3 mb-3"
+              className="
+                bg-white 
+                border border-gray-200 
+                rounded-2xl 
+                shadow-sm 
+                px-4 py-3 
+                flex flex-col gap-3
+              "
             >
-              <div className="text-xs font-semibold text-gray-600">
+              <div className="text-[11px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wide">
                 Unit {n}
               </div>
 
-              <Row title="Forwards (LW/C/RW)">
+              <LineGroup title="Forwards">
                 {fSlots.map((slotId) => {
                   const ids = state[slotId] || [];
                   const items = ids.length ? ids : [`placeholder-${slotId}`];
                   const role = getRoleFromSlotId(slotId);
 
                   return (
-                    <SortableContext
+                    <div
+                      className="flex flex-col items-center gap-1"
                       key={slotId}
-                      id={slotId}
-                      items={items}
-                      strategy={horizontalListSortingStrategy}
                     >
-                      {items.map((id) =>
-                        id.startsWith("placeholder-") ? (
-                          <Placeholder key={id} id={id} label={`${role} Slot`} />
-                        ) : (
-                          <PlayerCard
-                            key={id}
-                            id={id}
-                            player={forwards.find((p) => p.id === id)}
-                          />
-                        )
-                      )}
-                    </SortableContext>
+                      <span className="text-[10px] uppercase tracking-wide text-gray-400">
+                        {role}
+                      </span>
+                      <SortableContext
+                        id={slotId}
+                        items={items}
+                        strategy={horizontalListSortingStrategy}
+                      >
+                        {items.map((id) =>
+                          id.startsWith("placeholder-") ? (
+                            <Placeholder key={id} id={id} />
+                          ) : (
+                            <PlayerCard
+                              key={id}
+                              id={id}
+                              player={forwards.find((p) => p.id === id)}
+                            />
+                          )
+                        )}
+                      </SortableContext>
+                    </div>
                   );
                 })}
-              </Row>
+              </LineGroup>
 
-              <Row title="Defense (LD/RD)">
+              <LineGroup title="Defense">
                 {dSlots.map((slotId) => {
                   const ids = state[slotId] || [];
                   const items = ids.length ? ids : [`placeholder-${slotId}`];
                   const role = getRoleFromSlotId(slotId);
 
                   return (
-                    <SortableContext
+                    <div
+                      className="flex flex-col items-center gap-1"
                       key={slotId}
-                      id={slotId}
-                      items={items}
-                      strategy={horizontalListSortingStrategy}
                     >
-                      {items.map((id) =>
-                        id.startsWith("placeholder-") ? (
-                          <Placeholder key={id} id={id} label={`${role} Slot`} />
-                        ) : (
-                          <PlayerCard
-                            key={id}
-                            id={id}
-                            player={defense.find((p) => p.id === id)}
-                          />
-                        )
-                      )}
-                    </SortableContext>
+                      <span className="text-[10px] uppercase tracking-wide text-gray-400">
+                        {role}
+                      </span>
+                      <SortableContext
+                        id={slotId}
+                        items={items}
+                        strategy={horizontalListSortingStrategy}
+                      >
+                        {items.map((id) =>
+                          id.startsWith("placeholder-") ? (
+                            <Placeholder key={id} id={id} />
+                          ) : (
+                            <PlayerCard
+                              key={id}
+                              id={id}
+                              player={defense.find((p) => p.id === id)}
+                              size = "canvas"
+                            />
+                          )
+                        )}
+                      </SortableContext>
+                    </div>
                   );
                 })}
-              </Row>
+              </LineGroup>
             </div>
           );
         })}
-      </>
+      </div>
     );
   };
-
-  /* ---------------------------------------------------------
-          UI WRAPPERS
-  ---------------------------------------------------------- */
-  function Section({ title, children }) {
-    return (
-      <div className="mb-6">
-        <h3 className="font-bold text-sm mb-2 text-gray-700">{title}</h3>
-        <div className="bg-gray-100 border rounded-lg p-3 flex flex-wrap gap-2">
-          {children}
-        </div>
-      </div>
-    );
-  }
-
-  function Row({ title, children }) {
-    return (
-      <div className="bg-gray-100 border rounded-lg p-3 flex flex-col gap-2">
-        <div className="text-[11px] font-semibold text-gray-600">{title}</div>
-        <div className="flex items-center gap-3">{children}</div>
-      </div>
-    );
-  }
 
   /* ---------------------------------------------------------
           MAIN RENDER
   ---------------------------------------------------------- */
   return (
-    <div className="bg-white rounded-xl shadow-lg ring-1 ring-gray-200 p-6">
-      {/* toggle buttons */}
-      <div className="flex justify-center gap-2 mb-6">
-        {[
-          { key: "forwards", label: "Forward Lines" },
-          { key: "defense", label: "Defense Pairs" },
-          { key: "units", label: "5-Man Units" },
-        ].map((o) => (
-          <button
-            key={o.key}
-            onClick={() => setMode(o.key)}
-            className={`px-3 py-2 rounded-lg text-sm font-semibold ${
-              mode === o.key
-                ? `${teamColors?.bg || "bg-emerald-600"} text-white`
-                : "bg-gray-200 text-gray-700"
-            }`}
-          >
-            {o.label}
-          </button>
-        ))}
+    <div className="w-full bg-gradient-to-b from-slate-50 to-white rounded-2xl shadow-lg ring-1 ring-slate-200 p-5 sm:p-6">
+      {/* Header + mode toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <div>
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+            Line Combinations
+          </h2>
+          <p className="text-xs text-gray-500">
+            Drag players from the left panel into your lines, pairs, or units.
+          </p>
+        </div>
+
+        
+
+        <div className="flex flex-wrap gap-2 bg-slate-100 rounded-full p-1">
+          {[
+            { key: "forwards", label: "Forward Lines" },
+            { key: "defense", label: "Defense Pairs" },
+            { key: "units", label: "5-Man Units" },
+          ].map((o) => (
+            <button
+              key={o.key}
+              onClick={() => setMode(o.key)}
+              className={`
+                px-3 py-1.5 
+                rounded-full 
+                text-[11px] sm:text-xs 
+                font-semibold 
+                transition-all 
+                duration-150
+                ${
+                  mode === o.key
+                    ? `${teamColors?.bg || "bg-emerald-600"} text-white shadow-sm`
+                    : "bg-transparent text-gray-600 hover:bg-white"
+                }
+              `}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
       </div>
 
+      {/* Main layout: sidebar + canvas */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -673,15 +863,31 @@ export default function LineCombinations({ players, teamColors, teamId }) {
         onDragEnd={handleDragEnd}
         onDragCancel={() => setActiveId(null)}
       >
-        {mode === "forwards" && renderForwards()}
-        {mode === "defense" && renderDefense()}
-        {mode === "units" && renderUnits()}
+        <div className="flex gap-6">
+          {/* LEFT SIDEBAR */}
+          <aside className="w-[250px] shrink-0">
+            <div className="bg-slate-50 border border-gray-200 rounded-2xl p-3 max-h-[520px] overflow-y-auto">
+              {mode === "forwards" && renderSidebarForwards()}
+              {mode === "defense" && renderSidebarDefense()}
+              {mode === "units" && renderSidebarUnits()}
+            </div>
+          </aside>
 
+          {/* RIGHT MAIN CANVAS */}
+          <main className="flex-1">
+            {mode === "forwards" && renderMainForwards()}
+            {mode === "defense" && renderMainDefense()}
+            {mode === "units" && renderMainUnits()}
+          </main>
+        </div>
+
+        {/* Drag preview */}
         <DragOverlay>
           {activeId && !activeId.startsWith("placeholder-") && (
             <PlayerCard
               id={activeId}
-              player={players.find((p) => p.id === activeId)}
+              player={allPlayers.find((p) => p.id === activeId)}
+              size = "canvas"
             />
           )}
         </DragOverlay>
@@ -689,6 +895,8 @@ export default function LineCombinations({ players, teamColors, teamId }) {
     </div>
   );
 }
+
+
 
 
 
