@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   DndContext,
   closestCenter,
@@ -12,12 +12,16 @@ import {
 import {
   SortableContext,
   useSortable,
-  verticalListSortingStrategy,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-// ---------- Sortable Player Card ----------
+import { db } from "../firebase";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+
+/* ---------------------------------------------------------
+      PLAYER CARD (draggable)
+---------------------------------------------------------- */
 function PlayerCard({ id, player }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id });
@@ -25,6 +29,7 @@ function PlayerCard({ id, player }) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    zIndex: 50,
   };
 
   if (!player) return null;
@@ -32,50 +37,74 @@ function PlayerCard({ id, player }) {
   return (
     <div
       ref={setNodeRef}
-      style={style}
       {...attributes}
       {...listeners}
-      className="px-3 py-2 mb-1 text-center bg-white rounded-lg border shadow-sm cursor-grab hover:bg-gray-50 text-xs sm:text-sm select-none"
+      style={style}
+      className="px-3 py-2 text-center bg-white rounded-md border shadow-sm cursor-grab select-none hover:bg-gray-50 text-xs"
     >
       {player.firstName} {player.lastName}
     </div>
   );
 }
 
-// ---------- Sortable Placeholder ----------
+/* ---------------------------------------------------------
+      PLACEHOLDER SLOT (empty slot)
+---------------------------------------------------------- */
 function Placeholder({ id, label }) {
   const { setNodeRef } = useSortable({ id });
 
   return (
     <div
       ref={setNodeRef}
-      className="px-3 py-2 mb-1 text-center text-gray-400 italic bg-gray-50 rounded-md border border-dashed text-[10px] sm:text-xs select-none"
+      className="px-3 py-2 text-center bg-gray-100 text-gray-500 border border-dashed rounded-md text-[10px] min-w-[65px] select-none"
     >
-      {label || "Drag players here"}
+      {label}
     </div>
   );
 }
 
-// ---------- Helper: find container for an item ----------
+/* ---------------------------------------------------------
+      HELPERS
+---------------------------------------------------------- */
+
 function findContainer(state, itemId) {
   if (itemId.startsWith("placeholder-")) {
-    // e.g. placeholder-line1F => line1F
     return itemId.replace("placeholder-", "");
   }
-  return Object.keys(state).find((key) => state[key].includes(itemId)) || null;
+
+  return (
+    Object.keys(state).find((key) => {
+      const arr = state[key];
+      return Array.isArray(arr) && arr.includes(itemId);
+    }) || null
+  );
 }
 
-export default function LineCombinations({ players, teamColors }) {
+function getRoleFromSlotId(slotId) {
+  return slotId.split("-")[1] || "";
+}
+
+/* Debounce to prevent spam writes to Firestore */
+function debounce(fn, delay) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+
+/* ---------------------------------------------------------
+      MAIN COMPONENT
+---------------------------------------------------------- */
+export default function LineCombinations({ players, teamColors, teamId }) {
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
   const [activeId, setActiveId] = useState(null);
-  const [mode, setMode] = useState("forwards"); // "forwards" | "defense" | "units"
+  const [mode, setMode] = useState("forwards");
 
-  // Split players by position
+  // Player groups
   const forwards = players.filter((p) =>
     p.position?.toUpperCase().startsWith("F")
   );
@@ -83,614 +112,586 @@ export default function LineCombinations({ players, teamColors }) {
     p.position?.toUpperCase().startsWith("D")
   );
 
-  const allPlayers = [...forwards, ...defense];
+  /* ---------------------------------------------------------
+          Setup slot IDs
+  ---------------------------------------------------------- */
+  const forwardSlots = [];
+  const defenseSlots = [];
+  const unitForwardSlots = [];
+  const unitDefenseSlots = [];
 
-  // ---------- State for each mode ----------
-  const [forwardState, setForwardState] = useState({
-    available: [],
-    line1: [],
-    line2: [],
-    line3: [],
-    line4: [],
-    line5: [],
-  });
+  for (let i = 1; i <= 5; i++) {
+    forwardSlots.push(`line${i}-LW`, `line${i}-C`, `line${i}-RW`);
+    defenseSlots.push(`pair${i}-LD`, `pair${i}-RD`);
 
-  const [defenseState, setDefenseState] = useState({
-    available: [],
-    pair1: [],
-    pair2: [],
-    pair3: [],
-    pair4: [],
-    pair5: [],
-  });
+    unitForwardSlots.push(`unit${i}F-LW`, `unit${i}F-C`, `unit${i}F-RW`);
+    unitDefenseSlots.push(`unit${i}D-LD`, `unit${i}D-RD`);
+  }
 
-  const [unitState, setUnitState] = useState({
-    availableForwards: [],
-    availableDefense: [],
-    unit1F: [],
-    unit1D: [],
-    unit2F: [],
-    unit2D: [],
-    unit3F: [],
-    unit3D: [],
-    unit4F: [],
-    unit4D: [],
-    unit5F: [],
-    unit5D: [],
-  });
+  /* ---------------------------------------------------------
+          State for each mode
+  ---------------------------------------------------------- */
+  const [forwardState, setForwardState] = useState(null);
+  const [defenseState, setDefenseState] = useState(null);
+  const [unitState, setUnitState] = useState(null);
 
-  // Init state when players change
+  /* ---------------------------------------------------------
+          Initialize empty state
+  ---------------------------------------------------------- */
   useEffect(() => {
-    setForwardState({
-      available: forwards.map((p) => p.id),
-      line1: [],
-      line2: [],
-      line3: [],
-      line4: [],
-      line5: [],
-    });
+    const f = { available: forwards.map((p) => p.id) };
+    forwardSlots.forEach((slot) => (f[slot] = []));
+    setForwardState(f);
 
-    setDefenseState({
-      available: defense.map((p) => p.id),
-      pair1: [],
-      pair2: [],
-      pair3: [],
-      pair4: [],
-      pair5: [],
-    });
+    const d = { available: defense.map((p) => p.id) };
+    defenseSlots.forEach((slot) => (d[slot] = []));
+    setDefenseState(d);
 
-    setUnitState({
+    const u = {
       availableForwards: forwards.map((p) => p.id),
       availableDefense: defense.map((p) => p.id),
-      unit1F: [],
-      unit1D: [],
-      unit2F: [],
-      unit2D: [],
-      unit3F: [],
-      unit3D: [],
-      unit4F: [],
-      unit4D: [],
-      unit5F: [],
-      unit5D: [],
-    });
+    };
+    unitForwardSlots.forEach((slot) => (u[slot] = []));
+    unitDefenseSlots.forEach((slot) => (u[slot] = []));
+    setUnitState(u);
   }, [players]);
 
-  // ---------- Drag End Logic ----------
+  /* ---------------------------------------------------------
+          Load saved lines from Firestore
+  ---------------------------------------------------------- */
+  useEffect(() => {
+    if (!teamId) return;
+
+    const load = async () => {
+      const ref = doc(db, "teams", teamId);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) return;
+      const data = snap.data();
+
+      if (data.savedForwardLines) setForwardState(data.savedForwardLines);
+      if (data.savedDefensePairs) setDefenseState(data.savedDefensePairs);
+      if (data.savedUnits) setUnitState(data.savedUnits);
+    };
+
+    load();
+  }, [teamId]);
+
+  /* ---------------------------------------------------------
+          SAVE to Firestore (debounced)
+  ---------------------------------------------------------- */
+
+  const saveForwards = useCallback(
+    debounce((state) => {
+      updateDoc(doc(db, "teams", teamId), { savedForwardLines: state });
+    }, 200),
+    []
+  );
+
+  const saveDefensePairs = useCallback(
+    debounce((state) => {
+      updateDoc(doc(db, "teams", teamId), { savedDefensePairs: state });
+    }, 200),
+    []
+  );
+
+  const saveUnits = useCallback(
+    debounce((state) => {
+      updateDoc(doc(db, "teams", teamId), { savedUnits: state });
+    }, 200),
+    []
+  );
+
+  useEffect(() => {
+    if (forwardState && teamId) saveForwards(forwardState);
+  }, [forwardState]);
+
+  useEffect(() => {
+    if (defenseState && teamId) saveDefensePairs(defenseState);
+  }, [defenseState]);
+
+  useEffect(() => {
+    if (unitState && teamId) saveUnits(unitState);
+  }, [unitState]);
+
+  /* ---------------------------------------------------------
+          DRAG LOGIC
+  ---------------------------------------------------------- */
   const handleDragEnd = (event) => {
     const { active, over } = event;
     if (!over) return;
 
-    const activeId = active.id;
-    const overId = over.id;
+    const fromId = active.id;
+    const toId = over.id;
+    if (fromId === toId) return;
 
-    if (activeId === overId) return;
-
+    // ACTIVE mode determines which state object to use
     if (mode === "forwards") {
-      setForwardState((prev) => {
-        const state = { ...prev };
-        const from = findContainer(state, activeId);
-        const to = findContainer(state, overId);
-        if (!from || !to) return prev;
-
-        const fromItems = [...state[from]];
-        const toItems = [...state[to]];
-
-        const fromIndex = fromItems.indexOf(activeId);
-        if (fromIndex !== -1) fromItems.splice(fromIndex, 1);
-
-        // Max 3 per line, unlimited in available
-        const max = to === "available" ? Infinity : 3;
-        if (to !== "available" && toItems.length >= max) return prev;
-
-        let insertIndex = toItems.length;
-        if (!overId.startsWith("placeholder-")) {
-          const overIndex = toItems.indexOf(overId);
-          insertIndex = overIndex === -1 ? toItems.length : overIndex;
-        }
-        toItems.splice(insertIndex, 0, activeId);
-
-        state[from] = fromItems;
-        state[to] = toItems;
-        return state;
-      });
+      setForwardState((prev) => moveItem(prev, fromId, toId, "F"));
     } else if (mode === "defense") {
-      setDefenseState((prev) => {
-        const state = { ...prev };
-        const from = findContainer(state, activeId);
-        const to = findContainer(state, overId);
-        if (!from || !to) return prev;
-
-        const fromItems = [...state[from]];
-        const toItems = [...state[to]];
-
-        const fromIndex = fromItems.indexOf(activeId);
-        if (fromIndex !== -1) fromItems.splice(fromIndex, 1);
-
-        // Max 2 per pair, unlimited in available
-        const max = to === "available" ? Infinity : 2;
-        if (to !== "available" && toItems.length >= max) return prev;
-
-        let insertIndex = toItems.length;
-        if (!overId.startsWith("placeholder-")) {
-          const overIndex = toItems.indexOf(overId);
-          insertIndex = overIndex === -1 ? toItems.length : overIndex;
-        }
-        toItems.splice(insertIndex, 0, activeId);
-
-        state[from] = fromItems;
-        state[to] = toItems;
-        return state;
-      });
+      setDefenseState((prev) => moveItem(prev, fromId, toId, "D"));
     } else if (mode === "units") {
-      setUnitState((prev) => {
-        const state = { ...prev };
-        const from = findContainer(state, activeId);
-        const to = findContainer(state, overId);
-        if (!from || !to) return prev;
-
-        // Determine if player is F or D
-        const isForward = forwards.some((p) => p.id === activeId);
-        const isDefensePlayer = defense.some((p) => p.id === activeId);
-
-        const toIsForwardContainer =
-          to === "availableForwards" || to.endsWith("F");
-        const toIsDefenseContainer =
-          to === "availableDefense" || to.endsWith("D");
-
-        // Enforce F1 strict role at F/D level:
-        // - forwards only in F containers
-        // - D only in D containers
-        if (isForward && !toIsForwardContainer && !from.endsWith("F")) {
-          return prev;
-        }
-        if (isDefensePlayer && !toIsDefenseContainer && !from.endsWith("D")) {
-          return prev;
-        }
-
-        const fromItems = [...state[from]];
-        const toItems = [...state[to]];
-
-        const fromIndex = fromItems.indexOf(activeId);
-        if (fromIndex !== -1) fromItems.splice(fromIndex, 1);
-
-        // Max slots: 3 for F units, 2 for D units, unlimited in available pools
-        let max = Infinity;
-        if (to.endsWith("F")) max = 3;
-        if (to.endsWith("D")) max = 2;
-        if (
-          (to.endsWith("F") || to.endsWith("D")) &&
-          toItems.length >= max
-        ) {
-          return prev;
-        }
-
-        let insertIndex = toItems.length;
-        if (!overId.startsWith("placeholder-")) {
-          const overIndex = toItems.indexOf(overId);
-          insertIndex = overIndex === -1 ? toItems.length : overIndex;
-        }
-        toItems.splice(insertIndex, 0, activeId);
-
-        state[from] = fromItems;
-        state[to] = toItems;
-        return state;
-      });
+      setUnitState((prev) => moveUnit(prev, fromId, toId));
     }
+
+    setActiveId(null);
   };
 
-  // ---------- Render Helpers ----------
+  /* ---------------------------------------------------------
+          MOVE LOGIC (for forwards and defense)
+  ---------------------------------------------------------- */
+  function moveItem(state, fromId, toId, type) {
+    if (!state) return state;
 
-  const renderForwardsMode = () => {
+    const newState = { ...state };
+    const from = findContainer(newState, fromId);
+    const to = findContainer(newState, toId);
+
+    if (!from || !to) return state;
+
+    // enforce F/D rules
+    const isForward = type === "F";
+    if (isForward && !to.includes("line") && to !== "available") return state;
+    if (!isForward && !to.includes("pair") && to !== "available") return state;
+
+    // Can't drop onto filled slot
+    if (to !== "available" && newState[to].length >= 1) {
+      return state;
+    }
+
+    // Remove from source
+    const fromArr = [...newState[from]];
+    const idx = fromArr.indexOf(fromId);
+    if (idx !== -1) fromArr.splice(idx, 1);
+
+    // Add to destination
+    const toArr = [...newState[to]];
+    if (!toArr.includes(fromId)) toArr.push(fromId);
+
+    newState[from] = fromArr;
+    newState[to] = toArr;
+
+    return newState;
+  }
+
+  /* ---------------------------------------------------------
+          MOVE LOGIC (units)
+  ---------------------------------------------------------- */
+  function moveUnit(state, fromId, toId) {
+    if (!state) return state;
+
+    const newState = { ...state };
+    const from = findContainer(newState, fromId);
+    const to = findContainer(newState, toId);
+
+    if (!from || !to) return state;
+
+    const isForward = forwards.some((p) => p.id === fromId);
+    const isDefenseP = defense.some((p) => p.id === fromId);
+
+    const toIsForward =
+      to === "availableForwards" || (to.includes("F-") && to.startsWith("unit"));
+    const toIsDefense =
+      to === "availableDefense" || (to.includes("D-") && to.startsWith("unit"));
+
+    if (isForward && !toIsForward) return state;
+    if (isDefenseP && !toIsDefense) return state;
+
+    if (to !== "availableForwards" && to !== "availableDefense") {
+      if (newState[to].length >= 1) return state;
+    }
+
+    const fromArr = [...newState[from]];
+    const idx = fromArr.indexOf(fromId);
+    if (idx !== -1) fromArr.splice(idx, 1);
+
+    const toArr = [...newState[to]];
+    if (!toArr.includes(fromId)) toArr.push(fromId);
+
+    newState[from] = fromArr;
+    newState[to] = toArr;
+
+    return newState;
+  }
+
+  /* ---------------------------------------------------------
+          RENDER FORWARD LINES
+  ---------------------------------------------------------- */
+  const renderForwards = () => {
+    if (!forwardState) return null;
     const state = forwardState;
-    const containers = ["line1", "line2", "line3", "line4", "line5"];
-    const lineLabels = {
-      line1: "Line 1 — LW / C / RW",
-      line2: "Line 2 — LW / C / RW",
-      line3: "Line 3 — LW / C / RW",
-      line4: "Line 4 — LW / C / RW",
-      line5: "Line 5 — LW / C / RW",
-    };
+    const lines = [1, 2, 3, 4, 5];
 
     return (
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={(e) => setActiveId(e.active.id)}
-        onDragEnd={(e) => {
-          handleDragEnd(e);
-          setActiveId(null);
-        }}
-        onDragCancel={() => setActiveId(null)}
-      >
-        {/* Available Forwards */}
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2 text-sm text-gray-700">
-            Available Forwards
-          </h3>
-          <div className="flex flex-wrap gap-2 bg-gray-100 rounded-lg border p-3">
-            <SortableContext
-              id="available"
-              items={
-                state.available.length > 0
-                  ? state.available
-                  : ["placeholder-available"]
-              }
-              strategy={horizontalListSortingStrategy}
-            >
-              {state.available.length === 0 ? (
-                <Placeholder
-                  id="placeholder-available"
-                  label="Drag forwards back here"
+      <>
+        {/* Available */}
+        <Section title="Available Forwards">
+          <SortableContext
+            id="available"
+            items={
+              state.available.length > 0
+                ? state.available
+                : ["placeholder-available"]
+            }
+            strategy={horizontalListSortingStrategy}
+          >
+            {state.available.length === 0 ? (
+              <Placeholder
+                id="placeholder-available"
+                label="No forwards (drag from lines)"
+              />
+            ) : (
+              state.available.map((id) => (
+                <PlayerCard
+                  key={id}
+                  id={id}
+                  player={forwards.find((p) => p.id === id)}
                 />
-              ) : (
-                state.available.map((id) => {
-                  const player = forwards.find((p) => p.id === id);
-                  return <PlayerCard key={id} id={id} player={player} />;
-                })
-              )}
-            </SortableContext>
-          </div>
-        </div>
+              ))
+            )}
+          </SortableContext>
+        </Section>
 
-        {/* Forward Lines (5 rows) */}
-        <div className="flex flex-col gap-4">
-          {containers.map((containerId) => {
-            const ids = state[containerId];
-            const items =
-              ids.length > 0 ? ids : [`placeholder-${containerId}`];
+        {/* lines */}
+        {lines.map((n) => {
+          const lw = `line${n}-LW`;
+          const c = `line${n}-C`;
+          const rw = `line${n}-RW`;
 
-            return (
-              <div
-                key={containerId}
-                className="flex flex-col gap-1 bg-gray-50 rounded-lg border p-3"
-              >
-                <div className="text-xs font-semibold text-gray-600">
-                  {lineLabels[containerId]}
-                </div>
-                <div className="flex items-center gap-2">
+          return (
+            <Row key={n} title={`Line ${n} (LW / C / RW)`}>
+              {[lw, c, rw].map((slotId) => {
+                const ids = state[slotId] || [];
+                const items = ids.length > 0 ? ids : [`placeholder-${slotId}`];
+                const role = getRoleFromSlotId(slotId);
+
+                return (
                   <SortableContext
-                    id={containerId}
+                    key={slotId}
+                    id={slotId}
                     items={items}
                     strategy={horizontalListSortingStrategy}
                   >
-                    {items.map((id) => {
-                      if (id.startsWith("placeholder-")) {
-                        return (
-                          <Placeholder
-                            key={id}
-                            id={id}
-                            label="Drop F here"
-                          />
-                        );
-                      }
-                      const player = forwards.find((p) => p.id === id);
-                      return <PlayerCard key={id} id={id} player={player} />;
-                    })}
+                    {items.map((id) =>
+                      id.startsWith("placeholder-") ? (
+                        <Placeholder key={id} id={id} label={`${role} Slot`} />
+                      ) : (
+                        <PlayerCard
+                          key={id}
+                          id={id}
+                          player={forwards.find((p) => p.id === id)}
+                        />
+                      )
+                    )}
                   </SortableContext>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Drag Overlay */}
-        <DragOverlay>
-          {activeId && !activeId.startsWith("placeholder-") && (
-            <PlayerCard
-              id={activeId}
-              player={forwards.find((p) => p.id === activeId)}
-            />
-          )}
-        </DragOverlay>
-      </DndContext>
+                );
+              })}
+            </Row>
+          );
+        })}
+      </>
     );
   };
 
-  const renderDefenseMode = () => {
+  /* ---------------------------------------------------------
+          RENDER DEFENSE PAIRS
+  ---------------------------------------------------------- */
+  const renderDefense = () => {
+    if (!defenseState) return null;
     const state = defenseState;
-    const containers = ["pair1", "pair2", "pair3", "pair4", "pair5"];
-    const pairLabels = {
-      pair1: "Pair 1 — LD / RD",
-      pair2: "Pair 2 — LD / RD",
-      pair3: "Pair 3 — LD / RD",
-      pair4: "Pair 4 — LD / RD",
-      pair5: "Pair 5 — LD / RD",
-    };
+    const pairs = [1, 2, 3, 4, 5];
 
     return (
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={(e) => setActiveId(e.active.id)}
-        onDragEnd={(e) => {
-          handleDragEnd(e);
-          setActiveId(null);
-        }}
-        onDragCancel={() => setActiveId(null)}
-      >
-        {/* Available Defense */}
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2 text-sm text-gray-700">
-            Available Defense
-          </h3>
-          <div className="flex flex-wrap gap-2 bg-gray-100 rounded-lg border p-3">
-            <SortableContext
-              id="available"
-              items={
-                state.available.length > 0
-                  ? state.available
-                  : ["placeholder-available"]
-              }
-              strategy={horizontalListSortingStrategy}
-            >
-              {state.available.length === 0 ? (
-                <Placeholder
-                  id="placeholder-available"
-                  label="Drag D back here"
+      <>
+        <Section title="Available Defense">
+          <SortableContext
+            id="available"
+            items={
+              state.available.length > 0
+                ? state.available
+                : ["placeholder-available"]
+            }
+            strategy={horizontalListSortingStrategy}
+          >
+            {state.available.length === 0 ? (
+              <Placeholder
+                id="placeholder-available"
+                label="No defense (drag from pairs)"
+              />
+            ) : (
+              state.available.map((id) => (
+                <PlayerCard
+                  key={id}
+                  id={id}
+                  player={defense.find((p) => p.id === id)}
                 />
-              ) : (
-                state.available.map((id) => {
-                  const player = defense.find((p) => p.id === id);
-                  return <PlayerCard key={id} id={id} player={player} />;
-                })
-              )}
-            </SortableContext>
-          </div>
-        </div>
+              ))
+            )}
+          </SortableContext>
+        </Section>
 
-        {/* Defense Pairs */}
-        <div className="flex flex-col gap-4">
-          {containers.map((containerId) => {
-            const ids = state[containerId];
-            const items =
-              ids.length > 0 ? ids : [`placeholder-${containerId}`];
+        {pairs.map((n) => {
+          const ld = `pair${n}-LD`;
+          const rd = `pair${n}-RD`;
 
-            return (
-              <div
-                key={containerId}
-                className="flex flex-col gap-1 bg-gray-50 rounded-lg border p-3"
-              >
-                <div className="text-xs font-semibold text-gray-600">
-                  {pairLabels[containerId]}
-                </div>
-                <div className="flex items-center gap-2">
+          return (
+            <Row key={n} title={`Pair ${n} (LD / RD)`}>
+              {[ld, rd].map((slotId) => {
+                const ids = state[slotId] || [];
+                const items = ids.length > 0 ? ids : [`placeholder-${slotId}`];
+                const role = getRoleFromSlotId(slotId);
+
+                return (
                   <SortableContext
-                    id={containerId}
+                    key={slotId}
+                    id={slotId}
                     items={items}
                     strategy={horizontalListSortingStrategy}
                   >
-                    {items.map((id) => {
-                      if (id.startsWith("placeholder-")) {
-                        return (
-                          <Placeholder
-                            key={id}
-                            id={id}
-                            label="Drop D here"
-                          />
-                        );
-                      }
-                      const player = defense.find((p) => p.id === id);
-                      return <PlayerCard key={id} id={id} player={player} />;
-                    })}
+                    {items.map((id) =>
+                      id.startsWith("placeholder-") ? (
+                        <Placeholder key={id} id={id} label={`${role} Slot`} />
+                      ) : (
+                        <PlayerCard
+                          key={id}
+                          id={id}
+                          player={defense.find((p) => p.id === id)}
+                        />
+                      )
+                    )}
                   </SortableContext>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Drag Overlay */}
-        <DragOverlay>
-          {activeId && !activeId.startsWith("placeholder-") && (
-            <PlayerCard
-              id={activeId}
-              player={defense.find((p) => p.id === activeId)}
-            />
-          )}
-        </DragOverlay>
-      </DndContext>
+                );
+              })}
+            </Row>
+          );
+        })}
+      </>
     );
   };
 
-  const renderUnitsMode = () => {
+  /* ---------------------------------------------------------
+          RENDER UNITS (5 player units)
+  ---------------------------------------------------------- */
+  const renderUnits = () => {
+    if (!unitState) return null;
     const state = unitState;
     const units = [1, 2, 3, 4, 5];
 
     return (
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={(e) => setActiveId(e.active.id)}
-        onDragEnd={(e) => {
-          handleDragEnd(e);
-          setActiveId(null);
-        }}
-        onDragCancel={() => setActiveId(null)}
-      >
-        {/* Available Forwards & Defense */}
+      <>
+        {/* Available forwards + defense */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <h3 className="font-semibold mb-2 text-sm text-gray-700">
-              Available Forwards
-            </h3>
-            <div className="flex flex-wrap gap-2 bg-gray-100 rounded-lg border p-3">
-              <SortableContext
-                id="availableForwards"
-                items={
-                  state.availableForwards.length > 0
-                    ? state.availableForwards
-                    : ["placeholder-availableForwards"]
-                }
-                strategy={horizontalListSortingStrategy}
-              >
-                {state.availableForwards.length === 0 ? (
-                  <Placeholder
-                    id="placeholder-availableForwards"
-                    label="Drag F back here"
+          <Section title="Available Forwards">
+            <SortableContext
+              id="availableForwards"
+              items={
+                state.availableForwards.length > 0
+                  ? state.availableForwards
+                  : ["placeholder-availableForwards"]
+              }
+              strategy={horizontalListSortingStrategy}
+            >
+              {state.availableForwards.length === 0 ? (
+                <Placeholder
+                  id="placeholder-availableForwards"
+                  label="No forwards"
+                />
+              ) : (
+                state.availableForwards.map((id) => (
+                  <PlayerCard
+                    key={id}
+                    id={id}
+                    player={forwards.find((p) => p.id === id)}
                   />
-                ) : (
-                  state.availableForwards.map((id) => {
-                    const player = forwards.find((p) => p.id === id);
-                    return <PlayerCard key={id} id={id} player={player} />;
-                  })
-                )}
-              </SortableContext>
-            </div>
-          </div>
+                ))
+              )}
+            </SortableContext>
+          </Section>
 
-          <div>
-            <h3 className="font-semibold mb-2 text-sm text-gray-700">
-              Available Defense
-            </h3>
-            <div className="flex flex-wrap gap-2 bg-gray-100 rounded-lg border p-3">
-              <SortableContext
-                id="availableDefense"
-                items={
-                  state.availableDefense.length > 0
-                    ? state.availableDefense
-                    : ["placeholder-availableDefense"]
-                }
-                strategy={horizontalListSortingStrategy}
-              >
-                {state.availableDefense.length === 0 ? (
-                  <Placeholder
-                    id="placeholder-availableDefense"
-                    label="Drag D back here"
+          <Section title="Available Defense">
+            <SortableContext
+              id="availableDefense"
+              items={
+                state.availableDefense.length > 0
+                  ? state.availableDefense
+                  : ["placeholder-availableDefense"]
+              }
+              strategy={horizontalListSortingStrategy}
+            >
+              {state.availableDefense.length === 0 ? (
+                <Placeholder
+                  id="placeholder-availableDefense"
+                  label="No defense"
+                />
+              ) : (
+                state.availableDefense.map((id) => (
+                  <PlayerCard
+                    key={id}
+                    id={id}
+                    player={defense.find((p) => p.id === id)}
                   />
-                ) : (
-                  state.availableDefense.map((id) => {
-                    const player = defense.find((p) => p.id === id);
-                    return <PlayerCard key={id} id={id} player={player} />;
-                  })
-                )}
-              </SortableContext>
-            </div>
-          </div>
+                ))
+              )}
+            </SortableContext>
+          </Section>
         </div>
 
-        {/* Units: each has F row + D row (U3) */}
-        <div className="flex flex-col gap-4">
-          {units.map((num) => {
-            const fId = `unit${num}F`;
-            const dId = `unit${num}D`;
+        {/* Units */}
+        {units.map((n) => {
+          const fSlots = [
+            `unit${n}F-LW`,
+            `unit${n}F-C`,
+            `unit${n}F-RW`,
+          ];
+          const dSlots = [`unit${n}D-LD`, `unit${n}D-RD`];
 
-            const fItems =
-              state[fId].length > 0 ? state[fId] : [`placeholder-${fId}`];
-            const dItems =
-              state[dId].length > 0 ? state[dId] : [`placeholder-${dId}`];
-
-            return (
-              <div
-                key={num}
-                className="flex flex-col gap-2 bg-gray-50 rounded-lg border p-3"
-              >
-                <div className="text-xs font-semibold text-gray-600">
-                  Unit {num}
-                </div>
-
-                {/* Forwards Row */}
-                <div className="flex flex-col gap-1">
-                  <div className="text-[11px] font-semibold text-gray-500">
-                    Forwards — LW / C / RW
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <SortableContext
-                      id={fId}
-                      items={fItems}
-                      strategy={horizontalListSortingStrategy}
-                    >
-                      {fItems.map((id) => {
-                        if (id.startsWith("placeholder-")) {
-                          return (
-                            <Placeholder
-                              key={id}
-                              id={id}
-                              label="Drop F here"
-                            />
-                          );
-                        }
-                        const player = forwards.find((p) => p.id === id);
-                        return <PlayerCard key={id} id={id} player={player} />;
-                      })}
-                    </SortableContext>
-                  </div>
-                </div>
-
-                {/* Defense Row */}
-                <div className="flex flex-col gap-1">
-                  <div className="text-[11px] font-semibold text-gray-500">
-                    Defense — LD / RD
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <SortableContext
-                      id={dId}
-                      items={dItems}
-                      strategy={horizontalListSortingStrategy}
-                    >
-                      {dItems.map((id) => {
-                        if (id.startsWith("placeholder-")) {
-                          return (
-                            <Placeholder
-                              key={id}
-                              id={id}
-                              label="Drop D here"
-                            />
-                          );
-                        }
-                        const player = defense.find((p) => p.id === id);
-                        return <PlayerCard key={id} id={id} player={player} />;
-                      })}
-                    </SortableContext>
-                  </div>
-                </div>
+          return (
+            <div
+              key={n}
+              className="bg-gray-50 border rounded-lg p-3 flex flex-col gap-3 mb-3"
+            >
+              <div className="text-xs font-semibold text-gray-600">
+                Unit {n}
               </div>
-            );
-          })}
-        </div>
 
-        {/* Drag Overlay */}
-        <DragOverlay>
-          {activeId && !activeId.startsWith("placeholder-") && (
-            <PlayerCard
-              id={activeId}
-              player={allPlayers.find((p) => p.id === activeId)}
-            />
-          )}
-        </DragOverlay>
-      </DndContext>
+              <Row title="Forwards (LW/C/RW)">
+                {fSlots.map((slotId) => {
+                  const ids = state[slotId] || [];
+                  const items = ids.length ? ids : [`placeholder-${slotId}`];
+                  const role = getRoleFromSlotId(slotId);
+
+                  return (
+                    <SortableContext
+                      key={slotId}
+                      id={slotId}
+                      items={items}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {items.map((id) =>
+                        id.startsWith("placeholder-") ? (
+                          <Placeholder key={id} id={id} label={`${role} Slot`} />
+                        ) : (
+                          <PlayerCard
+                            key={id}
+                            id={id}
+                            player={forwards.find((p) => p.id === id)}
+                          />
+                        )
+                      )}
+                    </SortableContext>
+                  );
+                })}
+              </Row>
+
+              <Row title="Defense (LD/RD)">
+                {dSlots.map((slotId) => {
+                  const ids = state[slotId] || [];
+                  const items = ids.length ? ids : [`placeholder-${slotId}`];
+                  const role = getRoleFromSlotId(slotId);
+
+                  return (
+                    <SortableContext
+                      key={slotId}
+                      id={slotId}
+                      items={items}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {items.map((id) =>
+                        id.startsWith("placeholder-") ? (
+                          <Placeholder key={id} id={id} label={`${role} Slot`} />
+                        ) : (
+                          <PlayerCard
+                            key={id}
+                            id={id}
+                            player={defense.find((p) => p.id === id)}
+                          />
+                        )
+                      )}
+                    </SortableContext>
+                  );
+                })}
+              </Row>
+            </div>
+          );
+        })}
+      </>
     );
   };
 
-  // ---------- Main Render ----------
+  /* ---------------------------------------------------------
+          UI WRAPPERS
+  ---------------------------------------------------------- */
+  function Section({ title, children }) {
+    return (
+      <div className="mb-6">
+        <h3 className="font-bold text-sm mb-2 text-gray-700">{title}</h3>
+        <div className="bg-gray-100 border rounded-lg p-3 flex flex-wrap gap-2">
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  function Row({ title, children }) {
+    return (
+      <div className="bg-gray-100 border rounded-lg p-3 flex flex-col gap-2">
+        <div className="text-[11px] font-semibold text-gray-600">{title}</div>
+        <div className="flex items-center gap-3">{children}</div>
+      </div>
+    );
+  }
+
+  /* ---------------------------------------------------------
+          MAIN RENDER
+  ---------------------------------------------------------- */
   return (
     <div className="bg-white rounded-xl shadow-lg ring-1 ring-gray-200 p-6">
-      {/* Mode Toggle */}
-      <div className="flex justify-center gap-2 sm:gap-4 mb-8 flex-wrap">
+      {/* toggle buttons */}
+      <div className="flex justify-center gap-2 mb-6">
         {[
           { key: "forwards", label: "Forward Lines" },
           { key: "defense", label: "Defense Pairs" },
-          { key: "units", label: "5-Player Units" },
-        ].map((opt) => (
+          { key: "units", label: "5-Man Units" },
+        ].map((o) => (
           <button
-            key={opt.key}
-            onClick={() => setMode(opt.key)}
-            className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold ${
-              mode === opt.key
+            key={o.key}
+            onClick={() => setMode(o.key)}
+            className={`px-3 py-2 rounded-lg text-sm font-semibold ${
+              mode === o.key
                 ? `${teamColors?.bg || "bg-emerald-600"} text-white`
                 : "bg-gray-200 text-gray-700"
             }`}
           >
-            {opt.label}
+            {o.label}
           </button>
         ))}
       </div>
 
-      {mode === "forwards" && renderForwardsMode()}
-      {mode === "defense" && renderDefenseMode()}
-      {mode === "units" && renderUnitsMode()}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={(e) => setActiveId(e.active.id)}
+        onDragEnd={handleDragEnd}
+        onDragCancel={() => setActiveId(null)}
+      >
+        {mode === "forwards" && renderForwards()}
+        {mode === "defense" && renderDefense()}
+        {mode === "units" && renderUnits()}
+
+        <DragOverlay>
+          {activeId && !activeId.startsWith("placeholder-") && (
+            <PlayerCard
+              id={activeId}
+              player={players.find((p) => p.id === activeId)}
+            />
+          )}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }
+
+
+
 
 
 
