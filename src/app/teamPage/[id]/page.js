@@ -48,6 +48,7 @@ export default function TeamPage() {
   "Teagan Wilson": "/playerPhotos/teaganwilson.JPG",
   "Alanna Hoag": "/playerPhotos/alannahoag.JPG",
   "Cera Luciani": "/playerPhotos/ceraluciani.JPG",
+  "Madelynn Wiggins": "/playerPhotos/madelynnwiggins.JPG",
 
   };
   const defaultPhoto = "/defaultProfile.png";
