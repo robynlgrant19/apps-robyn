@@ -48,7 +48,7 @@ export default function TeamPage() {
   "Cera Luciani": "/playerPhotos/ceraluciani.JPG",
   "Madelynn Wiggins": "/playerPhotos/madelynnwiggins.JPG",
   "Erika Johnson": "/playerPhotos/erikajohnson.JPG",
-  "Amelia Spencer": "/playerPhotos/erikajohnson.JPG",
+  "Amelia Spencer": "/playerPhotos/ameliaspencer.JPG",
 
   };
   const defaultPhoto = "/defaultProfile.png";
