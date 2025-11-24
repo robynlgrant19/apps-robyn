@@ -35,6 +35,7 @@ export default function PlayerHome() {
   "Teagan Wilson": "/playerPhotos/teaganwilson.JPG",
   "Alanna Hoag": "/playerPhotos/alannahoag.JPG",
   "Cera Luciani": "/playerPhotos/ceraluciani.JPG",
+  "Madelynn Wiggins": "/playerPhotos/madelynnwiggins.JPG",
 
   };
 
