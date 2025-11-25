@@ -283,6 +283,88 @@ useEffect(() => {
   //sort games in chrono order
   gameStats.sort((a,b) => new Date(a.date) - new Date(b.date));
 
+  // --- PRODUCTION TREND (GOALS + ASSISTS + POINTS) CHART ---
+
+// --- PRODUCTION CHART: STACKED GOALS + ASSISTS + POINTS LINE ---
+
+const productionData = {
+  labels: gameStats.map((stat) => {
+    const homeOrAway = stat.location === "Away" ? `@ ${stat.opponent}` : `vs ${stat.opponent}`;
+    return [`${homeOrAway}`, stat.date];
+  }),
+  datasets: [
+    // ASSISTS BAR (bottom layer)
+    {
+      label: "Assists",
+      data: gameStats.map((s) => Number(s.assists)),
+      backgroundColor: "rgba(59, 130, 246, 0.6)", // blue
+      borderColor: "rgba(59, 130, 246, 1)",
+      borderWidth: 1,
+      stack: "stack1",
+      type: "bar",
+    },
+
+    // GOALS BAR (top layer)
+    {
+      label: "Goals",
+      data: gameStats.map((s) => Number(s.goals)),
+      backgroundColor: "rgba(16, 185, 129, 0.7)", // emerald
+      borderColor: "rgba(16, 185, 129, 1)",
+      borderWidth: 1,
+      stack: "stack1",
+      type: "bar",
+    },
+
+    // POINTS LINE
+    {
+      label: "Total Points",
+      data: gameStats.map((s) => Number(s.goals) + Number(s.assists)),
+      borderColor: "rgba(0,0,0,1)",
+      backgroundColor: "rgba(0,0,0,1)",
+      type: "line",
+      borderWidth: 3,
+      pointRadius: 6,
+      pointHoverRadius: 8,
+      tension: 0.35,
+      yAxisID: "y",
+    },
+  ],
+};
+
+
+const productionOptions = {
+  responsive: true,
+  scales: {
+    x: {
+      stacked: true,
+      title: { display: true, text: "Game" },
+    },
+    y: {
+      stacked: true,
+      beginAtZero: true,
+      title: { display: true, text: "Production" },
+      ticks: { stepSize: 1 },
+    },
+  },
+  plugins: {
+    legend: { position: "top" },
+    tooltip: {
+      mode: "index",
+      intersect: false,
+      callbacks: {
+        footer: (items) => {
+          const goals = Number(items[1]?.parsed.y || 0);
+          const assists = Number(items[0]?.parsed.y || 0);
+          const total = goals + assists;
+          return `Total Points: ${total}`;
+        },
+      },
+    },
+  },
+};
+
+
+
   // Radar chart data
   const radarData = {
     labels: ['Points', 'Goals', 'Assists', '+/-'],
@@ -764,8 +846,116 @@ const imagePath = manualPhoto || fallbackPhoto || defaultPhoto;
     Around the Net
     </h2>
       <div className="bg-white rounded-2xl shadow-md p-6 mt-6">
-        <h2 className="text-xl font-semibold">Goals and Assists per Game</h2>
-        <Bar data={barDataForPoints} options={barOptionsForPoints} />
+     <h2 className="text-xl font-semibold">Production Heatmap</h2>
+
+<div className="bg-gradient-to-br from-white to-gray-100 rounded-3xl shadow-xl p-10 mt-6 border border-gray-200">
+  
+  {/* Legend */}
+  <div className="flex items-center justify-center mb-6 text-sm text-gray-600 gap-4">
+    <div className="flex items-center gap-1">
+      <div className="w-4 h-4 rounded-md bg-emerald-200"></div> <span>Low</span>
+    </div>
+    <div className="flex items-center gap-1">
+      <div className="w-4 h-4 rounded-md bg-emerald-300"></div> <span>Med</span>
+    </div>
+    <div className="flex items-center gap-1">
+      <div className="w-4 h-4 rounded-md bg-emerald-500"></div> <span>High</span>
+    </div>
+  </div>
+
+  <div className="flex flex-wrap gap-8 justify-center">
+
+    {gameStats.map((stat, idx) => {
+      const goals = Number(stat.goals) || 0;
+      const assists = Number(stat.assists) || 0;
+      const points = goals + assists;
+      
+      // Smooth gradient scale
+      const intensity =
+        points === 0 
+          ? "from-gray-200 to-gray-300" :
+        points === 1 
+          ? "from-emerald-200 to-emerald-300" :
+        points === 2 
+          ? "from-emerald-300 to-emerald-400" :
+        points === 3 
+          ? "from-emerald-400 to-emerald-500" :
+        "from-emerald-500 to-emerald-600";
+
+      // Optional win/loss badge placeholder (you can tie to actual game result later)
+      //const wlBadge = stat.result === "W" ? "bg-emerald-600" : "bg-red-600";
+
+      return (
+        <div key={idx} className="flex flex-col items-center transition transform hover:-translate-y-1">
+
+          {/* Tile */}
+          <div
+            className={`
+              w-24 h-24 rounded-2xl border border-gray-300 
+              shadow-lg flex flex-col items-center justify-center 
+              bg-gradient-to-br ${intensity}
+              hover:shadow-2xl hover:scale-[1.04]
+              transition-all duration-200 relative overflow-hidden
+            `}
+          >
+            {/* W/L Badge (top-right) 
+            <div 
+              className={`
+                absolute top-1 right-1 px-1.5 py-0.5 text-[10px] 
+                font-bold text-white rounded-md shadow-sm
+                ${stat.result === "W" ? "bg-emerald-600" : "bg-red-500"}
+              `}
+            >
+              {stat.result || "—"}
+            </div> */}
+
+            {/* Glow effect for multipoint games */}
+            {points >= 2 && (
+              <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
+            )}
+
+            {/* Inner stat chips */}
+            <div className="flex flex-col items-center gap-1 z-10">
+
+              {/* Goals chip */}
+              {goals > 0 && (
+                <span className="px-2 py-0.5 text-xs font-semibold text-white bg-green-700 rounded-full shadow-md">
+                  G{goals}
+                </span>
+              )}
+
+              {/* Assists chip */}
+              {assists > 0 && (
+                <span className="px-2 py-0.5 text-xs font-semibold text-white bg-blue-700 rounded-full shadow-md">
+                  A{assists}
+                </span>
+              )}
+
+              {/* 0 points */}
+              {points === 0 && (
+                <span className="text-xs text-gray-600 font-medium">0 pts</span>
+              )}
+            </div>
+          </div>
+
+          {/* Opponent label */}
+          <p className="text-xs text-gray-700 mt-2 font-semibold text-center w-24 leading-tight">
+            {stat.location === "Away" ? "@ " : "vs "}
+            {stat.opponent}
+          </p>
+
+          {/* Date label */}
+          <p className="text-[11px] text-gray-400 mt-1">
+            {stat.date}
+          </p>
+        </div>
+      );
+    })}
+
+  </div>
+</div>
+
+
       </div>
 
       <div className="bg-white rounded-2xl shadow-md p-6 mt-6">
