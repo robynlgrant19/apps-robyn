@@ -49,6 +49,16 @@ export default function TeamPage() {
   "Madelynn Wiggins": "/playerPhotos/madelynnwiggins.JPG",
   "Erika Johnson": "/playerPhotos/erikajohnson.JPG",
   "Amelia Spencer": "/playerPhotos/ameliaspencer.JPG",
+  "Sophia Cuozzo": "/playerPhotos/sophiacuozzo.JPG",
+  "Grace Bonnell": "/playerPhotos/gracebonnell.JPG",
+  "Juliet Rutigliano": "/playerPhotos/julietrutigliano.JPG",
+  "Olivia Robbins": "/playerPhotos/oliviarobbins.JPG",
+  "Annabel Prochilo": "/playerPhotos/annabelprochilo.JPG",
+  "Lisi Palmer": "/playerPhotos/lisipalmer.JPG",
+  "Jorja Moore": "/playerPhotos/jorjamoore.JPG",
+  "Karlee Lehner": "/playerPhotos/karleelehner.JPG",
+  "Claire Delaney Deis": "/playerPhotos/clairedelaneydeis.JPG",
+  "Lilli Warnock": "/playerPhotos/lilliwarnock.JPG",
 
   };
   const defaultPhoto = "/defaultProfile.png";
@@ -695,7 +705,7 @@ export default function TeamPage() {
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = defaultPhoto;
                 }}
-                className="w-full h-56 object-cover transition-transform duration-300 group-hover:scale-105 bg-gray-100"
+                className="w-full h-64 object-cover object-top transition-transform duration-300 group-hover:scale-105 bg-gray-100"
               />
 
               {/* Jersey Number Overlay */}

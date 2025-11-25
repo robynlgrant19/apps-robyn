@@ -68,6 +68,16 @@ export default function PlayerProfile() {
   "Madelynn Wiggins": "/playerPhotos/madelynnwiggins.JPG",
   "Erika Johnson": "/playerPhotos/erikajohnson.JPG",
   "Amelia Spencer": "/playerPhotos/ameliaspencer.JPG",
+  "Sophia Cuozzo": "/playerPhotos/sophiacuozzo.JPG",
+  "Grace Bonnell": "/playerPhotos/gracebonnell.JPG",
+  "Juliet Rutigliano": "/playerPhotos/julietrutigliano.JPG",
+  "Olivia Robbins": "/playerPhotos/oliviarobbins.JPG",
+  "Annabel Prochilo": "/playerPhotos/annabelprochilo.JPG",
+  "Lisi Palmer": "/playerPhotos/lisipalmer.JPG",
+  "Jorja Moore": "/playerPhotos/jorjamoore.JPG",
+  "Karlee Lehner": "/playerPhotos/karleelehner.JPG",
+  "Claire Delaney Deis": "/playerPhotos/clairedelaneydeis.JPG",
+  "Lilli Warnock": "/playerPhotos/lilliwarnock.JPG",
 
   
 };
@@ -590,16 +600,17 @@ const imagePath = manualPhoto || fallbackPhoto || defaultPhoto;
           <div className="flex items-center gap-6">
             {/* --- PROFILE PHOTO --- */}
             <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden border-4 border-gray-200 shadow-md">
-              <img
-                src={imagePath}
-                alt={`${player.firstName} ${player.lastName}`}
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = defaultPhoto;
-                }}
-                className="w-full h-full object-cover bg-gray-100"
-              />
-            </div>
+                <img
+                  src={imagePath}
+                  alt={`${player.firstName} ${player.lastName}`}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = defaultPhoto;
+                  }}
+                  className="w-full h-full object-cover object-top bg-gray-100"
+                />
+              </div>
+
 
             {/* --- PLAYER NAME + POSITION --- */}
             <div>

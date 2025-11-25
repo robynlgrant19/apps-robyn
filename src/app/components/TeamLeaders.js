@@ -67,12 +67,15 @@ const TeamLeaders = ({ teamLeaders, teamColors = {} }) => {
         {/* --- Featured Player Card --- */}
         {topPlayer ? (
           <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-300 flex flex-col justify-between items-center hover:shadow-2xl transition-all duration-300">
-            <img
-              src={`/playerPhotos/${topPlayer.name.replace(/\s+/g, '').toLowerCase()}.JPG`}
-              alt={`${topPlayer.name} profile`}
-              onError={(e) => (e.currentTarget.src = "/playerPhotos/defaultProfile.png")}
-              className="w-32 h-32 object-cover rounded-full border-4 border-gray-200 shadow-md mb-4"
-            />
+            <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden border-4 border-gray-200 shadow-md mb-4">
+              <img
+                src={`/playerPhotos/${topPlayer.name.replace(/\s+/g, '').toLowerCase()}.JPG`}
+                alt={`${topPlayer.name} profile`}
+                onError={(e) => (e.currentTarget.src = "/playerPhotos/defaultProfile.png")}
+                className="w-full h-full object-cover object-top bg-gray-100"
+              />
+            </div>
+
 
             <div className="text-center">
               {/* Only show “Top Points/Goals/Assists” for the true top player */}
