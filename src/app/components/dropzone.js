@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { useParams } from "next/navigation";
 import { db, storage } from "../firebase";
 import { collection, query, where, getDocs, updateDoc, addDoc, doc, getDoc } from "firebase/firestore";
 import * as XLSX from "xlsx";
+import { teamColorClasses } from "../teamColors";
+
 
 export default function Dropbox({ teamId: propTeamId, onGameUploaded }) {
   const { id: routeTeamId } = useParams();
@@ -20,6 +22,39 @@ export default function Dropbox({ teamId: propTeamId, onGameUploaded }) {
   const [opponentScore, setOpponentScore] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
+  const [teamName, setTeamName] = useState("");
+
+
+
+
+
+  //team colors #################################
+useEffect(() => {
+  if (!teamId) return;
+
+  const loadTeam = async () => {
+    const teamRef = doc(db, "teams", teamId);
+    const teamSnap = await getDoc(teamRef);
+
+    if (teamSnap.exists()) {
+      console.log("🔥 FULL TEAM DOC:", teamSnap.data());
+      const data = teamSnap.data();
+      setTeamName(data.school || "");
+    } else {
+      console.log("❌ No team found for ID:", teamId);
+    }
+  };
+
+  loadTeam();
+}, [teamId]);
+
+const colors = teamColorClasses[teamName] || {
+  bg: "bg-gray-600",
+  hoverBg: "hover:bg-gray-700",
+}; //#############################################
+
+
+
 
   const handleUpload = async () => {
     if (!file || !gameDate || !opponent) {
@@ -200,13 +235,14 @@ export default function Dropbox({ teamId: propTeamId, onGameUploaded }) {
     />
 
     {/* Submit Button */}
-    <button
-      onClick={handleUpload}
-      className="mt-4 bg-emerald-600 text-white font-semibold py-3 rounded-md hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-      disabled={!file || !opponent || !gameDate}
-    >
-      {isUploading ? "Uploading..." : "Submit Game"}
-    </button>
+  <button
+    onClick={handleUpload}
+    className={`mt-4 ${colors.bg} ${colors.hoverBg} text-white font-semibold py-3 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed`}
+    disabled={!file || !opponent || !gameDate}
+  >
+    {isUploading ? "Uploading..." : "Submit Game"}
+  </button>
+
 
     {/* Status Message */}
     {uploadMessage && (

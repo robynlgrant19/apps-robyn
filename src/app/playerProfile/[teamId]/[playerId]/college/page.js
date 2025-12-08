@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { db } from '../../../firebase';
+import { db } from '../../../../firebase';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { Radar, Bar, Line, Pie, Scatter } from 'react-chartjs-2';
 import {
@@ -18,7 +18,9 @@ import {
   BarElement,
   ArcElement,
 } from 'chart.js';
-import { teamColorClasses } from '../../../teamColors';
+import { teamColorClasses } from '../../../../teamColors';
+import { redirect } from 'next/navigation';
+
 
 ChartJS.register(
   RadialLinearScale,
@@ -74,6 +76,7 @@ export default function PlayerProfile() {
     'Blocking a shot...',
   ];
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [teamType, setTeamType] = useState(null);
 
   const playerImages = {
     'Robyn Grant': '/playerPhotos/robyngrant.jpg',
@@ -107,6 +110,7 @@ export default function PlayerProfile() {
     'Lilli Warnock': '/playerPhotos/lilliwarnock.JPG',
   };
 
+  
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * hockeySayings.length);
     setLoadingMessage(hockeySayings[randomIndex]);

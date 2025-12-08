@@ -739,18 +739,22 @@ return (
   <div className="bg-white border-l-8 border-emerald-800 rounded-xl shadow-lg ring-1 ring-gray-200 p-6 mb-10">
     <div className="flex items-center justify-center mb-4 gap-8">
 
-  {/* HOME TEAM */}
-  <div className="flex flex-col items-center">
-    <img
-      src="/teamLogos/plymouthstate.jpg" 
-      alt="Home Team Logo"
-      onError={(e) => (e.currentTarget.src = '/teamLogos/default.jpg')}
-      className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
-    />
-    <p className="text-3xl sm:text-4xl font-bold text-emerald-800 mt-2">
-      {gameInfo.teamScore}
-    </p>
-  </div>
+{/* HOME TEAM */}
+<div className="flex flex-col items-center">
+  <img
+    src={`/teamLogos/${gameInfo.teamName
+      ?.toLowerCase()
+      .replace(/\s+/g, '')}.jpg`}
+    alt={`${gameInfo.teamName} Logo`}
+    onError={(e) => (e.currentTarget.src = '/teamLogos/default.jpg')}
+    className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
+  />
+
+  <p className="text-3xl sm:text-4xl font-bold text-emerald-800 mt-2">
+    {gameInfo.teamScore}
+  </p>
+</div>
+
 
   {/* DASH */}
   <p className="text-4xl sm:text-5xl font-extrabold text-gray-700">-</p>
